@@ -1,0 +1,41 @@
+# =========================================
+# Java & Gradle
+# =========================================
+/build/
+/out/
+/.gradle/
+/bin/
+/target/
+
+# =========================================
+# IntelliJ / VSCode IDE
+# =========================================
+.idea/
+*.iml
+.vscode/
+
+# =========================================
+# Logs & OS files
+# =========================================
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# =========================================
+# Environment / Secrets
+# =========================================
+.env.properties
+.env.*
+src/main/resources/application-local.yml
+src/main/resources/application-*.yml
+!src/main/resources/application.yml
+!src/main/resources/application-local.yml.example
+
+# =========================================
+# Test / Coverage
+# =========================================
+/test-output/
+/reports/
+/coverage/
+/*.ser
