@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: uic-marketplace
+
+  config:
+    import: optional:file:.env.properties
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+jwt:
+  access-token-expiration: 3600
+  refresh-token-expiration: 604800
+  secret: ${JWT_SECRET}
