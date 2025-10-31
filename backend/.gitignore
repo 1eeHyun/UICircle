@@ -25,12 +25,25 @@
 # =========================================
 # Environment / Secrets
 # =========================================
-.env.properties
+# Local & environment configuration
+.env
+.env.local
 .env.*
+.env.properties
+
+# Spring Boot local config
 src/main/resources/application-local.yml
-src/main/resources/application-*.yml
-!src/main/resources/application.yml
+src/main/resources/application-dev.yml
+src/main/resources/application-prod.yml
+src/main/resources/application.yml
+src/main/resources/application.properties
+
+
+# Allow safe example/template files
+!src/main/resources/application.yml.example
 !src/main/resources/application-local.yml.example
+!src/main/resources/application.properties.example
+
 
 # =========================================
 # Test / Coverage
@@ -39,3 +52,10 @@ src/main/resources/application-*.yml
 /reports/
 /coverage/
 /*.ser
+
+# =========================================
+# OS-specific & temporary
+# =========================================
+Thumbs.db
+ehthumbs.db
+*.class

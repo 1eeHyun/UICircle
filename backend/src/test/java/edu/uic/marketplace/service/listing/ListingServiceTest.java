@@ -3,16 +3,23 @@ package edu.uic.marketplace.service.listing;
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
 import edu.uic.marketplace.dto.response.listing.ListingResponse;
+import edu.uic.marketplace.model.listing.Category;
 import edu.uic.marketplace.model.listing.ItemCondition;
 import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.ListingStatus;
 import edu.uic.marketplace.model.user.User;
+import edu.uic.marketplace.repository.listing.CategoryRepository;
+import edu.uic.marketplace.repository.listing.FavoriteRepository;
 import edu.uic.marketplace.repository.listing.ListingRepository;
 import edu.uic.marketplace.service.user.UserService;
+import edu.uic.marketplace.validator.auth.AuthValidator;
+import edu.uic.marketplace.validator.listing.CategoryValidator;
+import edu.uic.marketplace.validator.listing.ListingValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,23 +35,31 @@ import static org.mockito.Mockito.*;
 @DisplayName("ListingService Unit Test")
 class ListingServiceTest {
 
-    @Mock
-    private ListingRepository listingRepository;
-
-    @Mock
-    private UserService userService;
+    @Mock private ListingRepository listingRepository;
+    @Mock private UserService userService;
+    @Mock private CategoryRepository categoryRepository;
+    @Mock private AuthValidator authValidator;
+    @Mock private CategoryValidator categoryValidator;
+    @Mock private ListingValidator listingValidator;
+    @Mock private FavoriteRepository favoriteRepository;
 
     @InjectMocks
     private ListingServiceImpl listingService;
 
     private User testUser;
     private Listing testListing;
+    private Category testCategory;
 
     @BeforeEach
     void setUp() {
         testUser = User.builder()
                 .userId(1L)
                 .email("seller@uic.edu")
+                .build();
+
+        testCategory = Category.builder()
+                .categoryId(1L)
+                .name("Book")
                 .build();
 
         testListing = Listing.builder()
@@ -78,21 +93,45 @@ class ListingServiceTest {
                 .isNegotiable(true)
                 .build();
 
-        when(userService.findById(1L)).thenReturn(Optional.of(testUser));
-        when(listingRepository.save(any(Listing.class))).thenReturn(testListing);
+        when(authValidator.validateUserById(1L)).thenReturn(testUser);
+        when(categoryValidator.validateCategoryExists(1L)).thenReturn(testCategory);
+
+        // Validate Listing after save
+        when(listingRepository.save(any(Listing.class))).thenAnswer(inv -> {
+            Listing l = inv.getArgument(0);
+            assertThat(l.getSeller()).isNotNull();
+            assertThat(l.getSeller().getUserId()).isEqualTo(1L);
+            assertThat(l.getTitle()).isEqualTo("Calculus Textbook");
+
+            // Validate Category
+            assertThat(l.getCategory()).isEqualTo(testCategory);
+
+            l.setListingId(1L);
+            return l;
+        });
 
         // When
         ListingResponse response = listingService.createListing(1L, request);
 
         // Then
         assertThat(response).isNotNull();
+        assertThat(response.getListingId()).isEqualTo(1L);
         assertThat(response.getTitle()).isEqualTo("Calculus Textbook");
-        verify(userService, times(1)).findById(1L);
-        verify(listingRepository, times(1)).save(any(Listing.class));
+
+        ArgumentCaptor<Listing> captor = ArgumentCaptor.forClass(Listing.class);
+        verify(listingRepository, times(1)).save(captor.capture());
+        Listing saved = captor.getValue();
+        assertThat(saved.getSeller()).isNotNull();
+        assertThat(saved.getSeller().getUserId()).isEqualTo(1L);
+        assertThat(saved.getStatus()).isEqualTo(ListingStatus.ACTIVE);
+        assertThat(saved.getCondition()).isEqualTo(ItemCondition.LIKE_NEW);
+        assertThat(saved.getPrice()).isEqualByComparingTo("50.00");
+        assertThat(saved.getLatitude()).isEqualTo(41.8781);
+        assertThat(saved.getLongitude()).isEqualTo(-87.6298);
     }
 
     @Test
-    @DisplayName("Update listing - Success")
+    @DisplayName("Update listing - Success (dirty checking, no save)")
     void updateListing_Success() {
 
         // Given
@@ -101,17 +140,34 @@ class ListingServiceTest {
                 .price(new BigDecimal("45.00"))
                 .build();
 
-        when(listingRepository.findById(1L)).thenReturn(Optional.of(testListing));
-        when(listingRepository.save(any(Listing.class))).thenReturn(testListing);
+        User testUser = User.builder().userId(1L).email("seller@uic.edu").build();
+        Category testCategory = Category.builder().categoryId(1L).name("Book").build();
+        Listing testListing = Listing.builder()
+                .listingId(1L)
+                .seller(testUser)
+                .category(testCategory)
+                .title("Old Title")
+                .price(new BigDecimal("50.00"))
+                .status(ListingStatus.ACTIVE)
+                .build();
+
+        when(authValidator.validateUserById(1L)).thenReturn(testUser);
+        when(listingValidator.validateListing(1L)).thenReturn(testListing);
+        doNothing().when(listingValidator).validateSellerOwnership(testUser, testListing.getSeller());
+        when(favoriteRepository.existsByUser_UserIdAndListing_ListingId(1L, 1L)).thenReturn(false);
 
         // When
         ListingResponse response = listingService.updateListing(1L, 1L, request);
 
         // Then
         assertThat(testListing.getTitle()).isEqualTo("Updated Title");
-        assertThat(testListing.getPrice()).isEqualByComparingTo(new BigDecimal("45.00"));
-        verify(listingRepository, times(1)).save(testListing);
+        assertThat(testListing.getPrice()).isEqualByComparingTo("45.00");
+        assertThat(response.getTitle()).isEqualTo("Updated Title");
+        assertThat(response.getPrice()).isEqualByComparingTo("45.00");
+
+        verify(listingRepository, never()).save(any());
     }
+
 
     @Test
     @DisplayName("Delete listing - Success")
