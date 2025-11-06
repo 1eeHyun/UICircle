@@ -23,6 +23,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,7 +41,6 @@ public class ListingServiceImpl implements ListingService {
     private final ListingValidator listingValidator;
 
     private final FavoriteService favoriteService;
-    private final CategoryService categoryService;
 
     @Override
     @Transactional
@@ -47,9 +48,7 @@ public class ListingServiceImpl implements ListingService {
 
         // 1) validate user & category
         User user = authValidator.validateUserById(userId);
-        Category category = categoryService.findById(request.getCategoryId());
-
-        if (category == null) return null;
+        Category category = categoryValidator.validateSubCategory(request.getCategoryId());
 
         // 2) Build entity
         Listing newList = Listing.builder()
@@ -71,25 +70,41 @@ public class ListingServiceImpl implements ListingService {
     @Override
     @Transactional
     public ListingResponse updateListing(Long listingId, Long userId, UpdateListingRequest request) {
-
         // 1) validate user & listing
         User user = authValidator.validateUserById(userId);
-        Listing foundList = listingValidator.validateListing(listingId);
-        listingValidator.validateSellerOwnership(user, foundList.getSeller());
+        Listing found = listingValidator.validateListing(listingId);
+        listingValidator.validateSellerOwnership(user, found.getSeller());
 
-        // 2) update
-        foundList.setTitle(request.getTitle());
-        foundList.setDescription(request.getDescription());
-        foundList.setCondition(request.getCondition());
-        foundList.setPrice(request.getPrice());
-        foundList.setStatus(request.getStatus());
-        foundList.setIsNegotiable(request.getIsNegotiable());
+        // 2) patch-style update (ignore null)
+        if (request.getTitle() != null) {
+            found.setTitle(request.getTitle().trim());
+        }
+        if (request.getDescription() != null) {
+            found.setDescription(request.getDescription().trim());
+        }
+        if (request.getCondition() != null) {
+            found.setCondition(request.getCondition());
+        }
+        if (request.getPrice() != null) {
+            BigDecimal normalized = request.getPrice().setScale(2, RoundingMode.HALF_UP);
+            found.setPrice(normalized);
+        }
+        if (request.getIsNegotiable() != null) {
+            found.setIsNegotiable(request.getIsNegotiable());
+        }
+        if (request.getStatus() != null) {
+            // listingValidator.validateStatusTransition(found.getStatus(), request.getStatus());
+            found.setStatus(request.getStatus());
+        }
 
+        // 3) check favorite
         boolean isFavorite = favoriteRepository
                 .existsByUser_UserIdAndListing_ListingId(userId, listingId);
 
-        return ListingResponse.from(foundList, isFavorite);
+        // @Transactional + if persistent, not need save() (dirty checking)
+        return ListingResponse.from(found, isFavorite);
     }
+
 
     @Override
     @Transactional
@@ -131,7 +146,6 @@ public class ListingServiceImpl implements ListingService {
 
         // 3) check if the viewer favorites the listing
         boolean isFavorite = favoriteRepository.existsByUser_UserIdAndListing_ListingId(viewerId, listingId);
-
 
         // 4) return dto
         return ListingResponse.from(listing, isFavorite);

@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,87 +22,75 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
 
-        List<Category> all = categoryRepository.findAll();
+        // Load all and filter roots to avoid duplicate children at top level
+        return categoryRepository.findAllByOrderByNameAsc().stream()
+                .filter(Category::isRootCategory)
+                .sorted(Comparator.comparing(Category::getName, String.CASE_INSENSITIVE_ORDER))
+                .map(CategoryResponse::from) // recursive mapping
+                .toList();
+    }
 
-        return all.stream()
+    @Override
+    @Transactional(readOnly = true)
+    public Category findById(Long categoryId) {
+
+        if (categoryId == null) throw new IllegalArgumentException("categoryId must not be null");
+
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found: " + categoryId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getTopLevelCategories() {
+
+        return categoryRepository.findByParentIsNullOrderByNameAsc().stream()
                 .map(CategoryResponse::from)
                 .toList();
     }
 
     @Override
-    public Category findById(Long categoryId) {
-
-        Optional<Category> found = categoryRepository.findById(categoryId);
-        return found.orElse(null);
-    }
-
-    @Override
-    public List<CategoryResponse> getTopLevelCategories() {
-        return null;
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public List<CategoryResponse> getSubcategories(Long parentId) {
-        return null;
+
+        if (parentId == null) throw new IllegalArgumentException("parentId must not be null");
+
+        // Ensure parent exists (clear error message)
+        categoryRepository.findById(parentId)
+                .orElseThrow(() -> new IllegalArgumentException("Parent category not found: " + parentId));
+
+        return categoryRepository.findByParent_CategoryIdOrderByNameAsc(parentId).stream()
+                .map(CategoryResponse::from)
+                .toList();
+    }
+
+    /**
+     * Create new category (Admin only) - deferred (not enforced in local profile).
+     */
+    @Override
+    @Transactional
+    public CategoryResponse createCategory(Long userId, String name, Long parentId) {
+        // TODO: implement after auth/role enforcement is enabled
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     @Transactional
-    public CategoryResponse createCategory(Long userId, String name, Long parentId) {
-
-        // 1) authorize
-        authValidator.validateAdminById(userId);
-
-        // 2) validate input
-        String trimmed = (name == null) ? "" : name.trim();
-        if (trimmed.isEmpty()) {
-            throw new IllegalArgumentException("Category name must not be blank.");
-        }
-        if (trimmed.length() > 100) {
-            throw new IllegalArgumentException("Category name must be <= 100 characters.");
-        }
-
-        // 3) optional parent
-        Category parent = null;
-        if (parentId != null) {
-            parent = categoryRepository.findById(parentId)
-                    .orElseThrow(() -> new IllegalArgumentException("Parent category not found: " + parentId));
-        }
-
-//        // 4) uniqueness (parent_id + name)
-//        if (categoryRepository.existsByParentAndNameIgnoreCase(parent, trimmed)) {
-//            throw new IllegalStateException("Category with the same name already exists under the given parent.");
-//        }
-
-        // 5) persist
-        Category toSave = Category.builder()
-                .name(trimmed)
-                .parent(parent)
-                .build();
-
-        if (parent != null) {
-            parent.getChildren().add(toSave);
-        }
-
-        Category saved = categoryRepository.save(toSave);
-
-        // 6) map to DTO
-        return CategoryResponse.from(saved);
-    }
-
-
-    @Override
     public CategoryResponse updateCategory(Long categoryId, String name) {
-        return null;
+        // TODO: implement after auth/role enforcement is enabled
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
+    @Transactional
     public void deleteCategory(Long categoryId) {
-
+        // TODO: implement after auth/role enforcement is enabled
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsById(Long categoryId) {
-        return false;
+        return categoryId != null && categoryRepository.existsById(categoryId);
     }
 }
