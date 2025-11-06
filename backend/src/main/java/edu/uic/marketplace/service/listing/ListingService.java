@@ -78,13 +78,13 @@ public interface ListingService {
     
     /**
      * Get user's listings
-     * @param userId User ID
+     * @param sellerId User ID
      * @param status Listing status filter (nullable)
      * @param page Page number
      * @param size Page size
      * @return Paginated listing summary responses
      */
-    PageResponse<ListingSummaryResponse> getUserListings(Long userId, ListingStatus status, Integer page, Integer size);
+    PageResponse<ListingSummaryResponse> getUserListings(Long reqUserId, Long sellerId, ListingStatus status, Integer page, Integer size);
     
     /**
      * Change listing status

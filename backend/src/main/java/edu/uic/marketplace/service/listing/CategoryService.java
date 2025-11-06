@@ -4,7 +4,6 @@ import edu.uic.marketplace.dto.response.listing.CategoryResponse;
 import edu.uic.marketplace.model.listing.Category;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Category management service interface
@@ -22,7 +21,7 @@ public interface CategoryService {
      * @param categoryId Category ID
      * @return Category entity
      */
-    Optional<Category> findById(Long categoryId);
+    Category findById(Long categoryId);
     
     /**
      * Get top-level categories (parent_id is null)
@@ -43,7 +42,7 @@ public interface CategoryService {
      * @param parentId Parent category ID (nullable for top-level)
      * @return Created category response
      */
-    CategoryResponse createCategory(String name, Long parentId);
+    CategoryResponse createCategory(Long userId, String name, Long parentId);
     
     /**
      * Update category name (Admin only)
