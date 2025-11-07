@@ -11,7 +11,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     properties:
       hibernate:
         format_sql: true
@@ -42,6 +42,11 @@ spring:
           starttls:
             enable: true
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 50MB
+
 jwt:
   secret: ${JWT_SECRET:local_dev_secret}
   access-token-expiration: 3600          # Access token (sec)
@@ -53,11 +58,9 @@ logging:
     org.hibernate.SQL: DEBUG
     org.springframework.web: INFO
 
-server:
-  port: 8080
-  servlet:
-    context-path: /
-
-spring:
-  application:
-    name: uic-marketplace
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    s3:
+      bucket: ${S3_BUCKET}

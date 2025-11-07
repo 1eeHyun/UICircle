@@ -47,7 +47,7 @@ public interface CategoryService {
     
     /**
      * Update category name (Admin only)
-     * @param categoryId Category ID
+     * @param publicCategoryId Category ID
      * @param name New category name
      * @return Updated category response
      */
@@ -56,13 +56,13 @@ public interface CategoryService {
     /**
      * Delete category (Admin only)
      * Cannot delete if it has listings or subcategories
-     * @param categoryId Category ID
+     * @param publicCategoryId Category ID
      */
     void deleteCategory(String publicCategoryId);
     
     /**
      * Check if category exists
-     * @param categoryId Category ID
+     * @param publicCategoryId Category ID
      * @return true if exists, false otherwise
      */
     boolean existsById(String publicCategoryId);

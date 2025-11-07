@@ -28,16 +28,15 @@ public class AuthValidator {
      * Returns the authenticated user if credentials are valid
      */
     public User validateLogin(String userEmail, String password) {
+
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User with email " + userEmail + " not found"));
 
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash()))
             throw new UserNotFoundException("Invalid credentials");
-        }
 
-        if (!user.isActive()) {
+        if (!user.isActive())
             throw new UserNotAuthorizedException("User account is not active");
-        }
 
         return user;
     }
@@ -51,12 +50,12 @@ public class AuthValidator {
      * Ensures user is active and not deleted
      */
     public User validateUserByPublicId(String publicId) {
+
         User user = userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new UserNotFoundException("User with ID " + publicId + " not found"));
 
-        if (!user.isActive()) {
+        if (!user.isActive())
             throw new UserNotAuthorizedException("User account is not active");
-        }
 
         return user;
     }
@@ -65,11 +64,11 @@ public class AuthValidator {
      * Validate user by public ID and ensure they have admin role
      */
     public User validateAdminByPublicId(String publicId) {
+
         User user = validateUserByPublicId(publicId);
 
-        if (!user.getRole().equals(UserRole.ADMIN)) {
+        if (!user.getRole().equals(UserRole.ADMIN))
             throw new UserNotAuthorizedException("User does not have admin privileges");
-        }
 
         return user;
     }
@@ -78,11 +77,11 @@ public class AuthValidator {
      * Validate user by public ID and ensure they have professor role
      */
     public User validateProfessorByPublicId(String publicId) {
+
         User user = validateUserByPublicId(publicId);
 
-        if (!user.getRole().equals(UserRole.PROFESSOR)) {
+        if (!user.getRole().equals(UserRole.PROFESSOR))
             throw new UserNotAuthorizedException("User does not have professor privileges");
-        }
 
         return user;
     }
@@ -91,6 +90,7 @@ public class AuthValidator {
      * Validate user by public ID with specific status
      */
     public User validateUserByPublicIdAndStatus(String publicId, UserStatus expectedStatus) {
+
         User user = userRepository.findByPublicIdAndStatus(publicId, expectedStatus)
                 .orElseThrow(() -> new UserNotFoundException(
                         "User with ID " + publicId + " and status " + expectedStatus + " not found"));
@@ -106,12 +106,12 @@ public class AuthValidator {
      * Validate user by username (for authentication)
      */
     public User validateUserByUsername(String username) {
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User with username " + username + " not found"));
 
-        if (!user.isActive()) {
+        if (!user.isActive())
             throw new UserNotAuthorizedException("User account is not active");
-        }
 
         return user;
     }
@@ -120,15 +120,16 @@ public class AuthValidator {
      * Validate that user is logged in
      */
     public void validateLoggedIn(UserDetails userDetails) {
-        if (userDetails == null) {
+
+        if (userDetails == null)
             throw new UserNotLoggedInException("User is not logged in");
-        }
     }
 
     /**
      * Extract username from user details
      */
     public String extractUsername(UserDetails userDetails) {
+
         validateLoggedIn(userDetails);
         return userDetails.getUsername();
     }
@@ -137,6 +138,7 @@ public class AuthValidator {
      * Get logged-in user from user details
      */
     public User getLoggedInUser(UserDetails userDetails) {
+
         String username = extractUsername(userDetails);
         return validateUserByUsername(username);
     }
@@ -149,37 +151,37 @@ public class AuthValidator {
      * Validate that the current user owns the resource
      */
     public void validateOwnership(User currentUser, User resourceOwner) {
-        if (!currentUser.getUserId().equals(resourceOwner.getUserId())) {
+
+        if (!currentUser.getUserId().equals(resourceOwner.getUserId()))
             throw new UserNotAuthorizedException("User does not have permission to access this resource");
-        }
     }
 
     /**
      * Validate that the current user owns the resource or is an admin
      */
     public void validateOwnershipOrAdmin(User currentUser, User resourceOwner) {
+
         if (!currentUser.getUserId().equals(resourceOwner.getUserId())
-                && !currentUser.getRole().equals(UserRole.ADMIN)) {
+                && !currentUser.getRole().equals(UserRole.ADMIN))
             throw new UserNotAuthorizedException("User does not have permission to access this resource");
-        }
     }
 
     /**
      * Validate that the user has admin role
      */
     public void validateAdminRole(User user) {
-        if (!user.getRole().equals(UserRole.ADMIN)) {
+
+        if (!user.getRole().equals(UserRole.ADMIN))
             throw new UserNotAuthorizedException("User does not have admin privileges");
-        }
     }
 
     /**
      * Validate that the user has professor or admin role
      */
     public void validateProfessorOrAdminRole(User user) {
-        if (!user.getRole().equals(UserRole.PROFESSOR) && !user.getRole().equals(UserRole.ADMIN)) {
+
+        if (!user.getRole().equals(UserRole.PROFESSOR) && !user.getRole().equals(UserRole.ADMIN))
             throw new UserNotAuthorizedException("User does not have sufficient privileges");
-        }
     }
 
     // =================================================================
