@@ -21,6 +21,7 @@ public class CategoryValidator {
      * Validate that category exists by slug
      */
     public Category validateCategoryBySlug(String slug) {
+
         return categoryRepository.findBySlug(slug)
                 .orElseThrow(() -> new CategoryNotFoundException("Category with slug '" + slug + "' not found"));
     }
@@ -169,6 +170,7 @@ public class CategoryValidator {
      * Do not expose this in external APIs
      */
     Category validateCategoryByIdInternal(Long categoryId) {
+
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category with internal ID " + categoryId + " not found"));
     }

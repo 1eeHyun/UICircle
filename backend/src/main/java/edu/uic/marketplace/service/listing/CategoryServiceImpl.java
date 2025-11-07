@@ -3,7 +3,6 @@ package edu.uic.marketplace.service.listing;
 import edu.uic.marketplace.dto.response.listing.CategoryResponse;
 import edu.uic.marketplace.model.listing.Category;
 import edu.uic.marketplace.repository.listing.CategoryRepository;
-import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
 
-    private final AuthValidator authValidator;
     private final CategoryValidator categoryValidator;
     private final CategoryRepository categoryRepository;
 

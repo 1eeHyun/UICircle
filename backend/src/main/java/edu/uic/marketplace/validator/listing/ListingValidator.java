@@ -88,9 +88,24 @@ public class ListingValidator {
      * Validate that listing is active and available for transactions
      */
     public Listing validateActiveListingByPublicId(String publicId) {
+
         Listing listing = validateListingByPublicIdAndStatus(publicId, ListingStatus.ACTIVE);
 
         if (!listing.isActive()) {
+            throw new ListingNotFoundException("Listing with ID " + publicId + " is not available");
+        }
+
+        return listing;
+    }
+
+    /**
+     * Validate that listing is inactive and available for transactions
+     */
+    public Listing validateInActiveListingByPublicId(String publicId) {
+
+        Listing listing = validateListingByPublicIdAndStatus(publicId, ListingStatus.INACTIVE);
+
+        if (listing.isActive()) {
             throw new ListingNotFoundException("Listing with ID " + publicId + " is not available");
         }
 

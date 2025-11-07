@@ -7,6 +7,7 @@ import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.listing.ListingResponse;
 import edu.uic.marketplace.dto.response.listing.ListingSummaryResponse;
 import edu.uic.marketplace.model.listing.ListingStatus;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -26,44 +27,45 @@ public interface ListingService {
      * @param request Listing creation request
      * @return Created listing response
      */
-    ListingResponse createListing(String username, CreateListingRequest request);
+    ListingResponse createListing(String username, CreateListingRequest request, List<MultipartFile> images);
 
     /**
      * Update an existing listing
      * @param publicId Public ID of the listing
-     * @param userPublicId Public ID of the current user
+     * @param username Public ID of the current user
      * @param request Listing update request
+     * @param images List of MultipartFile
      * @return Updated listing response
      */
-    ListingResponse updateListing(String publicId, String userPublicId, UpdateListingRequest request);
+    ListingResponse updateListing(String publicId, String username, UpdateListingRequest request, List<MultipartFile> images);
 
     /**
      * Soft delete a listing
      * @param publicId Public ID of the listing
-     * @param userPublicId Public ID of the current user (seller)
+     * @param username Public ID of the current user (seller)
      */
-    void deleteListing(String publicId, String userPublicId);
+    void deleteListing(String publicId, String username);
 
     /**
      * Inactivate a listing (seller temporarily hides it)
      * @param publicId Public ID of the listing
-     * @param userPublicId Public ID of the current user (seller)
+     * @param username Public ID of the current user (seller)
      */
-    void inactivateListing(String publicId, String userPublicId);
+    void inactivateListing(String publicId, String username);
 
     /**
      * Reactivate an inactive listing
      * @param publicId Public ID of the listing
-     * @param userPublicId Public ID of the current user (seller)
+     * @param username Public ID of the current user (seller)
      */
-    void reactivateListing(String publicId, String userPublicId);
+    void reactivateListing(String publicId, String username);
 
     /**
      * Mark listing as sold
      * @param publicId Public ID of the listing
-     * @param userPublicId Public ID of the current user (seller)
+     * @param username Public ID of the current user (seller)
      */
-    void markAsSold(String publicId, String userPublicId);
+    void markAsSold(String publicId, String username);
 
     // =================================================================
     // Listing Retrieval - Use publicId
@@ -73,10 +75,10 @@ public interface ListingService {
      * Get listing by public ID for public view
      * Increments view count
      * @param publicId Public ID of the listing
-     * @param viewerPublicId Public ID of the viewer (optional, for favorite status)
+     * @param username Public ID of the viewer (optional, for favorite status)
      * @return Listing response
      */
-    ListingResponse getListingByPublicId(String publicId, String viewerPublicId);
+    ListingResponse getListingByPublicId(String publicId, String username);
 
     /**
      * Get listing by public ID for seller view

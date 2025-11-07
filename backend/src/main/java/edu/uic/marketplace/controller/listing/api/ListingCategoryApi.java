@@ -35,7 +35,7 @@ public class ListingCategoryApi implements ListingCategoryDocs {
     }
 
     @Override
-    @GetMapping("/{parentId}/subcategories")
+    @GetMapping("/{parentSlug}/subcategories")
     public ResponseEntity<CommonResponse<List<CategoryResponse>>> getSubcategories(
             @PathVariable String parentSlug
     ) {

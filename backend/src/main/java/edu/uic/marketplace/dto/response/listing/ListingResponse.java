@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Builder
 public class ListingResponse {
 
-    private Long listingId;
+    private String publicId;
     private String title;
     private String description;
     private BigDecimal price;
@@ -42,7 +42,7 @@ public class ListingResponse {
 
     public static ListingResponse from(Listing listing, boolean isFavorited) {
         return ListingResponse.builder()
-                .listingId(listing.getListingId())
+                .publicId(listing.getPublicId())
                 .title(listing.getTitle())
                 .description(listing.getDescription())
                 .price(listing.getPrice())
