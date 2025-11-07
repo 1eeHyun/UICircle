@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class UserNotSellerException extends CustomException {
 
-    public UserNotSellerException() {
-        super("User is not the seller of this listing", 403);
+    public UserNotSellerException(String message) {
+        super(message, 403);
     }
 }

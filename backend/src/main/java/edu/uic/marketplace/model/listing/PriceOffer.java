@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -29,6 +30,9 @@ public class PriceOffer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "offer_id")
     private Long offerId;
+
+    @Column(name = "public_id", nullable = false, updatable = false, unique = true, length = 36)
+    private String publicId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_id", nullable = false, foreignKey = @ForeignKey(name = "fk_price_offers_listing"))
@@ -56,6 +60,12 @@ public class PriceOffer {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (publicId == null)
+            publicId = UUID.randomUUID().toString();
+    }
 
     // Helper Methods
     public void accept() {

@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -25,6 +26,9 @@ public class Block {
 
     @EmbeddedId
     private BlockId id;
+
+    @Column(name = "public_id", nullable = false, updatable = false, unique = true, length = 36)
+    private String publicId;
 
     /**
      * User who blocked another user
@@ -64,5 +68,11 @@ public class Block {
 
         @Column(name = "blocked_id")
         private Long blockedId;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (this.publicId == null)
+            this.publicId = UUID.randomUUID().toString();
     }
 }

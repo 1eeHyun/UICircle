@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -33,6 +34,9 @@ public class Listing {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "listing_id")
     private Long listingId;
+
+    @Column(name = "public_id", length = 36, unique = true, nullable = false, updatable = false)
+    private String publicId;
 
     /**
      * Seller (listing owner)
@@ -120,6 +124,12 @@ public class Listing {
     @OrderBy("displayOrder ASC")
     @Builder.Default
     private List<ListingImage> images = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        if (this.publicId == null)
+            this.publicId = UUID.randomUUID().toString();
+    }
 
     /**
      * Helper Methods

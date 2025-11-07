@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class UserNotAuthorizedException extends CustomException {
 
-    public UserNotAuthorizedException() {
-        super("User not authorized", 401);
+    public UserNotAuthorizedException(String message) {
+        super(message, 401);
     }
 }

@@ -3,6 +3,7 @@ package edu.uic.marketplace.model.listing;
 public enum ListingStatus {
     ACTIVE("Active"),
     SOLD("Sold"),
+
     DELETED("Delete"),
     INACTIVE("Inactive");
 

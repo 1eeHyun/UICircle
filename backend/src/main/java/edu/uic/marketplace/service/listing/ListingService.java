@@ -6,113 +6,171 @@ import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.listing.ListingResponse;
 import edu.uic.marketplace.dto.response.listing.ListingSummaryResponse;
-import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.ListingStatus;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Listing management service interface
+ * Service interface for listing operations
+ * All methods use publicId for external API calls
  */
 public interface ListingService {
-    
+
+    // =================================================================
+    // Listing CRUD Operations - Use publicId
+    // =================================================================
+
     /**
-     * Create new listing
-     * @param userId Seller user ID
-     * @param request Create listing request
+     * Create a new listing
+     * @param username Username of the seller (from authentication context)
+     * @param request Listing creation request
      * @return Created listing response
      */
-    ListingResponse createListing(Long userId, CreateListingRequest request);
-    
+    ListingResponse createListing(String username, CreateListingRequest request);
+
     /**
-     * Update listing
-     * @param listingId Listing ID
-     * @param userId User ID (must be seller)
-     * @param request Update listing request
+     * Update an existing listing
+     * @param publicId Public ID of the listing
+     * @param userPublicId Public ID of the current user
+     * @param request Listing update request
      * @return Updated listing response
      */
-    ListingResponse updateListing(Long listingId, Long userId, UpdateListingRequest request);
-    
+    ListingResponse updateListing(String publicId, String userPublicId, UpdateListingRequest request);
+
     /**
-     * Delete listing (soft delete)
-     * @param listingId Listing ID
-     * @param userId User ID (must be seller)
+     * Soft delete a listing
+     * @param publicId Public ID of the listing
+     * @param userPublicId Public ID of the current user (seller)
      */
-    void deleteListing(Long listingId, Long userId);
-    
+    void deleteListing(String publicId, String userPublicId);
+
     /**
-     * Get listing by ID
-     * @param listingId Listing ID
-     * @return Listing entity
+     * Inactivate a listing (seller temporarily hides it)
+     * @param publicId Public ID of the listing
+     * @param userPublicId Public ID of the current user (seller)
      */
-    Optional<Listing> findById(Long listingId);
-    
+    void inactivateListing(String publicId, String userPublicId);
+
     /**
-     * Get listing detail by ID
-     * @param listingId Listing ID
-     * @param viewerId User ID viewing the listing (nullable)
-     * @return Listing response with full details
+     * Reactivate an inactive listing
+     * @param publicId Public ID of the listing
+     * @param userPublicId Public ID of the current user (seller)
      */
-    ListingResponse getListingById(Long listingId, Long viewerId);
-    
+    void reactivateListing(String publicId, String userPublicId);
+
     /**
-     * Search listings with filters
-     * @param request Search request with filters
+     * Mark listing as sold
+     * @param publicId Public ID of the listing
+     * @param userPublicId Public ID of the current user (seller)
+     */
+    void markAsSold(String publicId, String userPublicId);
+
+    // =================================================================
+    // Listing Retrieval - Use publicId
+    // =================================================================
+
+    /**
+     * Get listing by public ID for public view
+     * Increments view count
+     * @param publicId Public ID of the listing
+     * @param viewerPublicId Public ID of the viewer (optional, for favorite status)
+     * @return Listing response
+     */
+    ListingResponse getListingByPublicId(String publicId, String viewerPublicId);
+
+    /**
+     * Get listing by public ID for seller view
+     * @param publicId Public ID of the listing
+     * @param sellerPublicId Public ID of the seller
+     * @return Listing response
+     */
+    ListingResponse getListingForSeller(String publicId, String sellerPublicId);
+
+    /**
+     * Get listing by public ID for admin view
+     * @param publicId Public ID of the listing
+     * @return Listing response
+     */
+    ListingResponse getListingForAdmin(String publicId);
+
+    // =================================================================
+    // Listing Search and Browse - Use publicId and slug
+    // =================================================================
+
+    /**
+     * Get all active listings (public feed)
      * @param page Page number (0-indexed)
      * @param size Page size
+     * @param sortBy Sort field (e.g., "createdAt", "price")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return Paginated listing summary responses
      */
-    PageResponse<ListingSummaryResponse> searchListings(SearchListingRequest request, Integer page, Integer size);
-    
+    PageResponse<ListingSummaryResponse> getAllActiveListings(
+            int page, int size, String sortBy, String sortDirection);
+
     /**
-     * Get nearby listings
-     * @param latitude Latitude
-     * @param longitude Longitude
-     * @param radiusKm Radius in kilometers
+     * Get listings by category slug
+     * @param categorySlug Category slug
+     * @param page Page number
+     * @param size Page size
+     * @param sortBy Sort field
+     * @param sortDirection Sort direction
+     * @return Paginated listing summary responses
+     */
+    PageResponse<ListingSummaryResponse> getListingsByCategory(
+            String categorySlug, int page, int size, String sortBy, String sortDirection);
+
+    /**
+     * Get listings by seller's public ID
+     * @param sellerPublicId Seller's public ID
+     * @param status Listing status filter (optional)
      * @param page Page number
      * @param size Page size
      * @return Paginated listing summary responses
      */
-    PageResponse<ListingSummaryResponse> getNearbyListings(Double latitude, Double longitude, Double radiusKm, Integer page, Integer size);
-    
+    PageResponse<ListingSummaryResponse> getListingsBySeller(
+            String sellerPublicId, ListingStatus status, int page, int size);
+
     /**
-     * Get user's listings
-     * @param sellerId User ID
-     * @param status Listing status filter (nullable)
-     * @param page Page number
-     * @param size Page size
+     * Search listings by keyword
+     * @param request Search request with filters
      * @return Paginated listing summary responses
      */
-    PageResponse<ListingSummaryResponse> getUserListings(Long reqUserId, Long sellerId, ListingStatus status, Integer page, Integer size);
-    
+    PageResponse<ListingSummaryResponse> searchListings(SearchListingRequest request);
+
     /**
-     * Change listing status
-     * @param listingId Listing ID
-     * @param userId User ID (must be seller)
-     * @param status New status
-     * @return Updated listing response
+     * Get nearby listings within radius
+     * @param latitude User's latitude
+     * @param longitude User's longitude
+     * @param radiusMiles Search radius in miles
+     * @param categorySlug Category filter (optional)
+     * @return List of nearby listings
      */
-    ListingResponse updateListingStatus(Long listingId, Long userId, ListingStatus status);
-    
+    List<ListingSummaryResponse> getNearbyListings(
+            Double latitude, Double longitude, Double radiusMiles, String categorySlug);
+
+    // =================================================================
+    // Listing Statistics - Use publicId
+    // =================================================================
+
     /**
-     * Increment view count
-     * @param listingId Listing ID
+     * Increment view count for a listing
+     * @param publicId Public ID of the listing
      */
-    void incrementViewCount(Long listingId);
-    
+    void incrementViewCount(String publicId);
+
     /**
-     * Update favorite count
-     * @param listingId Listing ID
-     * @param increment true to increment, false to decrement
+     * Get total listing count by seller
+     * @param sellerPublicId Seller's public ID
+     * @return Total listing count
      */
-    void updateFavoriteCount(Long listingId, boolean increment);
-    
+    Long getListingCountBySeller(String sellerPublicId);
+
     /**
-     * Get recommended listings for user
-     * @param userId User ID
-     * @param limit Number of recommendations
-     * @return List of recommended listings
+     * Get listing count by seller and status
+     * @param sellerPublicId Seller's public ID
+     * @param status Listing status
+     * @return Listing count for the given status
      */
-    List<ListingSummaryResponse> getRecommendedListings(Long userId, Integer limit);
+    Long getListingCountBySellerAndStatus(String sellerPublicId, ListingStatus status);
 }

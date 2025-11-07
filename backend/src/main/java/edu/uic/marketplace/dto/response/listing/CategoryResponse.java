@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 @Builder
 public class CategoryResponse {
 
-    private Long categoryId;
+    private String categorySlug;
     private String name;
-    private Long parentId;
+    private String parentSlug;
 
     @Builder.Default
     private List<CategoryResponse> children = new ArrayList<>();
@@ -27,9 +27,9 @@ public class CategoryResponse {
         }
 
         return CategoryResponse.builder()
-                .categoryId(category.getCategoryId())
+                .categorySlug(category.getSlug())
                 .name(category.getName())
-                .parentId(category.getParent() != null ? category.getParent().getCategoryId() : null)
+                .parentSlug(category.getParent() != null ? category.getParent().getSlug() : null)
                 .children(category.getChildren().stream()
                         .map(CategoryResponse::from)
                         .collect(Collectors.toList()))

@@ -29,21 +29,26 @@ public class ListingCategoryApi implements ListingCategoryDocs {
     @GetMapping("/parent")
     public ResponseEntity<CommonResponse<List<CategoryResponse>>> getTopLevelCategories() {
 
+
         List<CategoryResponse> res = categoryService.getTopLevelCategories();
         return ResponseEntity.ok(CommonResponse.success(res));
     }
 
     @Override
     @GetMapping("/{parentId}/subcategories")
-    public ResponseEntity<CommonResponse<List<CategoryResponse>>> getSubcategories(@PathVariable Long parentId) {
+    public ResponseEntity<CommonResponse<List<CategoryResponse>>> getSubcategories(
+            @PathVariable String parentSlug
+    ) {
 
-        List<CategoryResponse> res = categoryService.getSubcategories(parentId);
+        List<CategoryResponse> res = categoryService.getSubcategories(parentSlug);
         return ResponseEntity.ok(CommonResponse.success(res));
     }
 
     @Override
     @PostMapping
-    public ResponseEntity<CommonResponse<CategoryResponse>> createCategory(Long userId, String name, Long parentId) {
+    public ResponseEntity<CommonResponse<CategoryResponse>> createCategory(
+            String name,
+            String parentSlug) {
         // TODO: future feature after launching the app
         return null;
     }

@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class UserNotLoggedInException extends CustomException {
 
-    public UserNotLoggedInException() {
-        super("User not logged-in", 401);
+    public UserNotLoggedInException(String message) {
+        super(message, 401);
     }
 }
