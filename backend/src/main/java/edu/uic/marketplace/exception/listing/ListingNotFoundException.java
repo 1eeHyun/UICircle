@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class ListingNotFoundException extends CustomException {
 
-    public ListingNotFoundException() {
-        super("Listing not found", 401);
+    public ListingNotFoundException(String message) {
+        super(message, 401);
     }
 }

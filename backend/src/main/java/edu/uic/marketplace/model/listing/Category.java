@@ -17,7 +17,9 @@ import java.util.List;
         },
         indexes = {
                 @Index(name = "idx_categories_parent_id", columnList = "parent_id"),
-                @Index(name = "idx_categories_name", columnList = "name")
+                @Index(name = "idx_categories_name", columnList = "name"),
+                @Index(name="idx_categories_slug", columnList="category_slug")
+
         }
 )
 @Getter
@@ -31,6 +33,9 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
     private Long categoryId;
+
+    @Column(name = "category_slug", unique = true, nullable = false, length = 128)
+    private String slug;
 
     /**
      * Category name
@@ -52,6 +57,12 @@ public class Category {
     @Builder.Default
     private List<Category> children = new ArrayList<>();
 
+    @PrePersist
+    public void prePersist() {
+        if (slug == null || slug.isBlank())
+            this.slug = generateSlug(this.name);
+    }
+
     /**
      * Helper Methods
      */
@@ -61,5 +72,14 @@ public class Category {
 
     public boolean hasChildren() {
         return children != null && !children.isEmpty();
+    }
+
+    private String generateSlug(String input) {
+        return input
+                .trim()
+                .toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-");
     }
 }

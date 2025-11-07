@@ -17,11 +17,12 @@ public interface CategoryService {
     List<CategoryResponse> getAllCategories();
     
     /**
-     * Get category by ID
-     * @param categoryId Category ID
+     * Get category by Slug
+     * @param categorySlug Category Slug
      * @return Category entity
      */
-    Category findById(Long categoryId);
+    Category findBySlug(String categorySlug);
+
     
     /**
      * Get top-level categories (parent_id is null)
@@ -31,10 +32,10 @@ public interface CategoryService {
     
     /**
      * Get subcategories of a parent category
-     * @param parentId Parent category ID
+     * @param parentSlug Parent category ID
      * @return List of subcategories
      */
-    List<CategoryResponse> getSubcategories(Long parentId);
+    List<CategoryResponse> getSubcategories(String parentSlug);
     
     /**
      * Create new category (Admin only)
@@ -42,7 +43,7 @@ public interface CategoryService {
      * @param parentId Parent category ID (nullable for top-level)
      * @return Created category response
      */
-    CategoryResponse createCategory(Long userId, String name, Long parentId);
+    CategoryResponse createCategory(String username, String name, Long parentId);
     
     /**
      * Update category name (Admin only)
@@ -50,19 +51,19 @@ public interface CategoryService {
      * @param name New category name
      * @return Updated category response
      */
-    CategoryResponse updateCategory(Long categoryId, String name);
+    CategoryResponse updateCategory(String publicCategoryId, String name);
     
     /**
      * Delete category (Admin only)
      * Cannot delete if it has listings or subcategories
      * @param categoryId Category ID
      */
-    void deleteCategory(Long categoryId);
+    void deleteCategory(String publicCategoryId);
     
     /**
      * Check if category exists
      * @param categoryId Category ID
      * @return true if exists, false otherwise
      */
-    boolean existsById(Long categoryId);
+    boolean existsById(String publicCategoryId);
 }

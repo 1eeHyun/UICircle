@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -27,6 +28,9 @@ public class PasswordReset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
+
+    @Column(name = "public_id", nullable = false, updatable = false, unique = true, length = 36)
+    private String publicId;
 
     /**
      * User requesting password reset
@@ -59,6 +63,12 @@ public class PasswordReset {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.publicId == null)
+            this.publicId = UUID.randomUUID().toString();
+    }
 
     /**
      * Helper Methods

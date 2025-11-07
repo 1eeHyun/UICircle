@@ -1,8 +1,9 @@
 package edu.uic.marketplace.repository.listing;
 
 import edu.uic.marketplace.model.listing.Category;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,36 +12,75 @@ import java.util.Optional;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
-    /**
-     * Find category by name (case-insensitive)
-     */
-    Optional<Category> findByNameIgnoreCase(String name);
-
-    List<Category> findByParent_CategoryIdOrderByNameAsc(Long parentId);
+    // =================================================================
+    // External API Methods - Use slug for all external operations
+    // =================================================================
 
     /**
-     * Find top-level categories (parent_id IS NULL)
+     * Find category by slug (for external API calls)
      */
-    List<Category> findByParentIsNullOrderByNameAsc();
+    Optional<Category> findBySlug(String slug);
 
     /**
-     * Find subcategories by parent
+     * Check if slug exists
      */
-    List<Category> findByParentOrderByNameAsc(Category parent);
+    boolean existsBySlug(String slug);
 
     /**
-     * Check if category has subcategories
+     * Find all root categories (categories with no parent)
      */
-    boolean existsByParent(Category parent);
+    List<Category> findByParentIsNull();
 
     /**
-     * Check if a category name already exists under the same parent (unique constraint)
+     * Find subcategories by parent category slug
      */
-    boolean existsByParentAndNameIgnoreCase(Category parent, String name);
+    List<Category> findByParent_Slug(String parentSlug);
 
     /**
-     * Find all categories with their children loaded (to avoid N+1)
+     * Find category with its children by slug
      */
-    @EntityGraph(attributePaths = {"children"})
-    List<Category> findAllByOrderByNameAsc();
+    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.children WHERE c.slug = :slug")
+    Optional<Category> findBySlugWithChildren(@Param("slug") String slug);
+
+    /**
+     * Find category with its parent by slug
+     */
+    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.parent WHERE c.slug = :slug")
+    Optional<Category> findBySlugWithParent(@Param("slug") String slug);
+
+    /**
+     * Find all categories with their children (for category tree)
+     */
+    @Query("SELECT DISTINCT c FROM Category c LEFT JOIN FETCH c.children")
+    List<Category> findAllWithChildren();
+
+    /**
+     * Check if category has any subcategories
+     */
+    boolean existsByParent_Slug(String parentSlug);
+
+    /**
+     * Count subcategories of a category
+     */
+    Long countByParent_Slug(String parentSlug);
+
+    // =================================================================
+    // Internal Methods - Use Long ID only for FK relationships
+    // =================================================================
+
+    /**
+     * Find category by internal ID (for internal FK operations only)
+     * Do not expose this in external APIs
+     */
+    Optional<Category> findById(Long categoryId);
+
+    /**
+     * Find categories by parent internal ID (for internal operations)
+     */
+    List<Category> findByParent_CategoryId(Long parentId);
+
+    /**
+     * Check if category exists by internal ID
+     */
+    boolean existsById(Long categoryId);
 }

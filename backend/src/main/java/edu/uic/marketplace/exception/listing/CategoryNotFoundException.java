@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class CategoryNotFoundException extends CustomException {
 
-    public CategoryNotFoundException() {
-        super("Category not found", 401);
+    public CategoryNotFoundException(String message) {
+        super(message, 401);
     }
 }

@@ -9,51 +9,102 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ListingRepository extends JpaRepository<Listing, Long> {
 
-    // -------------------------
-    // Single Listing Retrieval
-    // -------------------------
+    // =================================================================
+    // External API Methods - Use publicId for all external operations
+    // =================================================================
 
-    /** Find a listing by ID where deletedAt is NULL (not deleted) */
-    Optional<Listing> findByListingIdAndDeletedAtIsNull(Long listingId);
+    /**
+     * Find listing by public ID where not deleted (for public/owner/admin views)
+     */
+    Optional<Listing> findByPublicIdAndDeletedAtIsNull(String publicId);
 
-    /** Find a listing by ID where deletedAt is NULL and status is not the given status */
-    Optional<Listing> findByListingIdAndDeletedAtIsNullAndStatusNot(Long listingId, ListingStatus status);
+    /**
+     * Find listing by public ID with specific status where not deleted
+     */
+    Optional<Listing> findByPublicIdAndStatusAndDeletedAtIsNull(String publicId, ListingStatus status);
 
+    /**
+     * Find listing by public ID with status in given set where not deleted
+     */
+    Optional<Listing> findByPublicIdAndStatusInAndDeletedAtIsNull(String publicId, Collection<ListingStatus> statuses);
 
-    // -------------------------
-    // Paged Listing Retrieval
-    // -------------------------
+    /**
+     * Check if listing exists by public ID
+     */
+    boolean existsByPublicId(String publicId);
 
-    /** Find all listings by a seller (includes deleted ones) */
-    Page<Listing> findBySeller_UserId(Long sellerId, Pageable pageable);
+    // =================================================================
+    // Seller's Listings - Use seller's publicId
+    // =================================================================
 
-    /** Find all listings by a seller and specific status (includes deleted ones) */
-    Page<Listing> findBySeller_UserIdAndStatus(Long sellerId, ListingStatus status, Pageable pageable);
+    /**
+     * Find all listings by seller's public ID where not deleted
+     */
+    Page<Listing> findBySeller_PublicIdAndDeletedAtIsNull(String sellerPublicId, Pageable pageable);
 
-    /** Find all listings by a seller where deletedAt is NULL (not deleted) */
-    Page<Listing> findBySeller_UserIdAndDeletedAtIsNull(Long sellerId, Pageable pageable);
+    /**
+     * Find listings by seller's public ID and status where not deleted
+     */
+    Page<Listing> findBySeller_PublicIdAndStatusAndDeletedAtIsNull(String sellerPublicId, ListingStatus status, Pageable pageable);
 
-    /** Find all listings by a seller and status where deletedAt is NULL (not deleted) */
-    Page<Listing> findBySeller_UserIdAndStatusAndDeletedAtIsNull(Long sellerId, ListingStatus status, Pageable pageable);
+    /**
+     * Find listings by seller's public ID with status in set where not deleted
+     */
+    Page<Listing> findBySeller_PublicIdAndStatusInAndDeletedAtIsNull(String sellerPublicId, Collection<ListingStatus> statuses, Pageable pageable);
 
-    /** Find listings by status where deletedAt is NULL (not deleted) */
+    /**
+     * Count listings by seller's public ID where not deleted
+     */
+    Long countBySeller_PublicIdAndDeletedAtIsNull(String sellerPublicId);
+
+    /**
+     * Count listings by seller's public ID and status where not deleted
+     */
+    Long countBySeller_PublicIdAndStatusAndDeletedAtIsNull(String sellerPublicId, ListingStatus status);
+
+    // =================================================================
+    // Public Feed and Category Listings - Use category slug
+    // =================================================================
+
+    /**
+     * Find listings by exact status where not deleted (for public feed)
+     */
     Page<Listing> findByStatusAndDeletedAtIsNull(ListingStatus status, Pageable pageable);
 
-    /** Find listings by category where deletedAt is NULL (not deleted) */
-    Page<Listing> findByCategory_CategoryIdAndDeletedAtIsNull(Long categoryId, Pageable pageable);
+    /**
+     * Find listings by status in set where not deleted (flexible public feed)
+     */
+    Page<Listing> findByStatusInAndDeletedAtIsNull(Collection<ListingStatus> statuses, Pageable pageable);
 
+    /**
+     * Find listings by category slug where not deleted
+     */
+    Page<Listing> findByCategory_SlugAndDeletedAtIsNull(String categorySlug, Pageable pageable);
 
-    // -------------------------
-    // Search
-    // -------------------------
+    /**
+     * Find listings by category slug and status where not deleted
+     */
+    Page<Listing> findByCategory_SlugAndStatusAndDeletedAtIsNull(String categorySlug, ListingStatus status, Pageable pageable);
 
-    /** Search listings by keyword in title or description (case-insensitive) with status filter and excluding deleted ones */
+    /**
+     * Find listings by category slug and status in set where not deleted
+     */
+    Page<Listing> findByCategory_SlugAndStatusInAndDeletedAtIsNull(String categorySlug, Collection<ListingStatus> statuses, Pageable pageable);
+
+    // =================================================================
+    // Search - Use publicId for results
+    // =================================================================
+
+    /**
+     * Search listings by keyword with specific status, excluding deleted
+     */
     @Query("""
            SELECT l FROM Listing l
            WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -65,48 +116,107 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
                                   @Param("status") ListingStatus status,
                                   Pageable pageable);
 
-
-    // -------------------------
-    // Geolocation-based Search
-    // -------------------------
+    /**
+     * Search listings by keyword with status in set, excluding deleted
+     */
+    @Query("""
+           SELECT l FROM Listing l
+           WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(l.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+             AND l.status IN :statuses
+             AND l.deletedAt IS NULL
+           """)
+    Page<Listing> searchByKeywordInStatuses(@Param("keyword") String keyword,
+                                            @Param("statuses") Collection<ListingStatus> statuses,
+                                            Pageable pageable);
 
     /**
-     * Find nearby listings within a certain radius (in miles) using latitude/longitude distance formula.
-     * Deleted listings are excluded (deleted_at IS NULL).
-     *
-     * Note:
-     * - 3959 = radius of the Earth in miles.
-     * - Change @Param("status") type to ListingStatus if your DB supports enum mapping.
+     * Search listings by keyword and category slug with status filter
+     */
+    @Query("""
+           SELECT l FROM Listing l
+           WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(l.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+             AND l.category.slug = :categorySlug
+             AND l.status IN :statuses
+             AND l.deletedAt IS NULL
+           """)
+    Page<Listing> searchByKeywordAndCategory(@Param("keyword") String keyword,
+                                             @Param("categorySlug") String categorySlug,
+                                             @Param("statuses") Collection<ListingStatus> statuses,
+                                             Pageable pageable);
+
+    // =================================================================
+    // Geolocation Search
+    // =================================================================
+
+    /**
+     * Find nearby listings within radius (miles) with single status filter
+     * Uses Haversine formula for distance calculation
+     * Note: For better performance, consider PostGIS or similar spatial database extensions
      */
     @Query(value = """
             SELECT *
             FROM listings l
-            WHERE l.status = :status
+            WHERE l.status = :#{#status.name()}
               AND l.deleted_at IS NULL
               AND (3959 * acos(
                     cos(radians(:latitude)) * cos(radians(l.latitude)) *
                     cos(radians(l.longitude) - radians(:longitude)) +
                     sin(radians(:latitude)) * sin(radians(l.latitude))
-                  )) <= :radiusMi
+                  )) <= :radiusMiles
             ORDER BY (3959 * acos(
                       cos(radians(:latitude)) * cos(radians(l.latitude)) *
                       cos(radians(l.longitude) - radians(:longitude)) +
                       sin(radians(:latitude)) * sin(radians(l.latitude))
                     ))
             """, nativeQuery = true)
-    List<Listing> findNearbyMiles(@Param("latitude") Double lat,
-                                  @Param("longitude") Double lon,
-                                  @Param("radiusMi") Double radiusMi,
-                                  @Param("status") String status);
+    List<Listing> findNearbyWithinRadius(@Param("latitude") Double latitude,
+                                         @Param("longitude") Double longitude,
+                                         @Param("radiusMiles") Double radiusMiles,
+                                         @Param("status") ListingStatus status);
 
+    /**
+     * Find nearby listings within radius with multiple status filters
+     */
+    @Query(value = """
+            SELECT l.*
+            FROM listings l
+            WHERE l.status IN (:statuses)
+              AND l.deleted_at IS NULL
+              AND (3959 * acos(
+                    cos(radians(:latitude)) * cos(radians(l.latitude)) *
+                    cos(radians(l.longitude) - radians(:longitude)) +
+                    sin(radians(:latitude)) * sin(radians(l.latitude))
+                  )) <= :radiusMiles
+            ORDER BY (3959 * acos(
+                      cos(radians(:latitude)) * cos(radians(l.latitude)) *
+                      cos(radians(l.longitude) - radians(:longitude)) +
+                      sin(radians(:latitude)) * sin(radians(l.latitude))
+                    ))
+            """, nativeQuery = true)
+    List<Listing> findNearbyWithinRadiusInStatuses(@Param("latitude") Double latitude,
+                                                   @Param("longitude") Double longitude,
+                                                   @Param("radiusMiles") Double radiusMiles,
+                                                   @Param("statuses") Collection<String> statuses);
 
-    // -------------------------
-    // Counting
-    // -------------------------
+    // =================================================================
+    // Internal Methods - Use Long ID only for FK relationships
+    // =================================================================
 
-    /** Count total listings by a seller */
-    Long countBySeller_UserId(Long sellerId);
+    /**
+     * Find listing by internal ID (for internal FK operations only)
+     * Do not expose this in external APIs
+     */
+    Optional<Listing> findById(Long listingId);
 
-    /** Count listings by a seller and specific status */
-    Long countBySeller_UserIdAndStatus(Long sellerId, ListingStatus status);
+    /**
+     * Find listing by internal ID where not deleted (for internal operations)
+     */
+    Optional<Listing> findByListingIdAndDeletedAtIsNull(Long listingId);
+
+    /**
+     * Find listings by seller's internal ID (for internal aggregations)
+     */
+    Page<Listing> findBySeller_UserIdAndDeletedAtIsNull(Long sellerId, Pageable pageable);
 }

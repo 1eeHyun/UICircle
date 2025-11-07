@@ -2,14 +2,15 @@ package edu.uic.marketplace.validator.auth;
 
 import edu.uic.marketplace.exception.auth.UserNotAuthorizedException;
 import edu.uic.marketplace.exception.auth.UserNotFoundException;
+import edu.uic.marketplace.exception.auth.UserNotLoggedInException;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.model.user.UserRole;
+import edu.uic.marketplace.model.user.UserStatus;
 import edu.uic.marketplace.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -18,37 +19,188 @@ public class AuthValidator {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // =================================================================
+    // Authentication Methods
+    // =================================================================
+
+    /**
+     * Validate user login credentials
+     * Returns the authenticated user if credentials are valid
+     */
     public User validateLogin(String userEmail, String password) {
-
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new UserNotFoundException("User with email " + userEmail + " not found"));
 
-        if (!passwordEncoder.matches(password, user.getPasswordHash()))
-            throw new UserNotFoundException();
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new UserNotFoundException("Invalid credentials");
+        }
+
+        if (!user.isActive()) {
+            throw new UserNotAuthorizedException("User account is not active");
+        }
 
         return user;
     }
 
-    // TODO: Later feature for logging-in
-    public User validateUserById(Long id) {
+    // =================================================================
+    // External API Validation - Use publicId
+    // =================================================================
 
-        // TODO: check user status (ACTIVE, SUSPENDED, DELETED)
-        return userRepository.findById(id)
-                .orElseThrow(UserNotFoundException::new);
+    /**
+     * Validate and retrieve user by public ID (for external API calls)
+     * Ensures user is active and not deleted
+     */
+    public User validateUserByPublicId(String publicId) {
+        User user = userRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + publicId + " not found"));
 
-//        return null;
+        if (!user.isActive()) {
+            throw new UserNotAuthorizedException("User account is not active");
+        }
+
+        return user;
     }
 
-    public User validateAdminById(Long id) {
+    /**
+     * Validate user by public ID and ensure they have admin role
+     */
+    public User validateAdminByPublicId(String publicId) {
+        User user = validateUserByPublicId(publicId);
 
-        Optional<User> found = userRepository.findById(id);
-        if (found.isEmpty())
-            throw new UserNotFoundException();
+        if (!user.getRole().equals(UserRole.ADMIN)) {
+            throw new UserNotAuthorizedException("User does not have admin privileges");
+        }
 
-        User user = found.get();
-        if (!user.getRole().equals(UserRole.ADMIN))
-            throw new UserNotAuthorizedException();
+        return user;
+    }
 
+    /**
+     * Validate user by public ID and ensure they have professor role
+     */
+    public User validateProfessorByPublicId(String publicId) {
+        User user = validateUserByPublicId(publicId);
+
+        if (!user.getRole().equals(UserRole.PROFESSOR)) {
+            throw new UserNotAuthorizedException("User does not have professor privileges");
+        }
+
+        return user;
+    }
+
+    /**
+     * Validate user by public ID with specific status
+     */
+    public User validateUserByPublicIdAndStatus(String publicId, UserStatus expectedStatus) {
+        User user = userRepository.findByPublicIdAndStatus(publicId, expectedStatus)
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User with ID " + publicId + " and status " + expectedStatus + " not found"));
+
+        return user;
+    }
+
+    // =================================================================
+    // Authentication Context Methods
+    // =================================================================
+
+    /**
+     * Validate user by username (for authentication)
+     */
+    public User validateUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User with username " + username + " not found"));
+
+        if (!user.isActive()) {
+            throw new UserNotAuthorizedException("User account is not active");
+        }
+
+        return user;
+    }
+
+    /**
+     * Validate that user is logged in
+     */
+    public void validateLoggedIn(UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new UserNotLoggedInException("User is not logged in");
+        }
+    }
+
+    /**
+     * Extract username from user details
+     */
+    public String extractUsername(UserDetails userDetails) {
+        validateLoggedIn(userDetails);
+        return userDetails.getUsername();
+    }
+
+    /**
+     * Get logged-in user from user details
+     */
+    public User getLoggedInUser(UserDetails userDetails) {
+        String username = extractUsername(userDetails);
+        return validateUserByUsername(username);
+    }
+
+    // =================================================================
+    // Authorization Methods
+    // =================================================================
+
+    /**
+     * Validate that the current user owns the resource
+     */
+    public void validateOwnership(User currentUser, User resourceOwner) {
+        if (!currentUser.getUserId().equals(resourceOwner.getUserId())) {
+            throw new UserNotAuthorizedException("User does not have permission to access this resource");
+        }
+    }
+
+    /**
+     * Validate that the current user owns the resource or is an admin
+     */
+    public void validateOwnershipOrAdmin(User currentUser, User resourceOwner) {
+        if (!currentUser.getUserId().equals(resourceOwner.getUserId())
+                && !currentUser.getRole().equals(UserRole.ADMIN)) {
+            throw new UserNotAuthorizedException("User does not have permission to access this resource");
+        }
+    }
+
+    /**
+     * Validate that the user has admin role
+     */
+    public void validateAdminRole(User user) {
+        if (!user.getRole().equals(UserRole.ADMIN)) {
+            throw new UserNotAuthorizedException("User does not have admin privileges");
+        }
+    }
+
+    /**
+     * Validate that the user has professor or admin role
+     */
+    public void validateProfessorOrAdminRole(User user) {
+        if (!user.getRole().equals(UserRole.PROFESSOR) && !user.getRole().equals(UserRole.ADMIN)) {
+            throw new UserNotAuthorizedException("User does not have sufficient privileges");
+        }
+    }
+
+    // =================================================================
+    // Internal Methods - Use Long ID only for FK relationships
+    // =================================================================
+
+    /**
+     * Validate user by internal ID (for internal FK operations only)
+     * Do not expose this in external APIs
+     */
+    User validateUserByIdInternal(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with internal ID " + userId + " not found"));
+    }
+
+    /**
+     * Validate admin by internal ID (for internal operations only)
+     */
+    User validateAdminByIdInternal(Long userId) {
+        User user = validateUserByIdInternal(userId);
+        validateAdminRole(user);
         return user;
     }
 }

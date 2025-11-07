@@ -59,7 +59,7 @@ public interface ListingCategoryDocs {
             }
     )
     ResponseEntity<CommonResponse<List<CategoryResponse>>> getSubcategories(
-            @PathVariable Long parentId);
+            @PathVariable String parentSlug);
 
 
     @Operation(
@@ -78,5 +78,7 @@ public interface ListingCategoryDocs {
                     @ApiResponse(responseCode = "403", description = "Forbidden - Admin only")
             }
     )
-    ResponseEntity<CommonResponse<CategoryResponse>> createCategory(Long userId, String name, Long parentId);
+    ResponseEntity<CommonResponse<CategoryResponse>> createCategory(
+            String name,
+            String parentSlug);
 }

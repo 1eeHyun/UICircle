@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "profiles")
@@ -19,6 +20,9 @@ public class Profile {
     @Id
     @Column(name = "user_id")
     private Long userId;
+
+    @Column(name = "public_id", nullable = false, updatable = false, unique = true, length = 36)
+    private String publicId;
 
     /**
      * User relationship (FK)
@@ -67,6 +71,12 @@ public class Profile {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.publicId == null)
+            this.publicId = UUID.randomUUID().toString();
+    }
 
     /**
      * Helper Methods
