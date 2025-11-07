@@ -1,5 +1,7 @@
-package edu.uic.marketplace.model.listing;
+package edu.uic.marketplace.model.transaction;
 
+import edu.uic.marketplace.model.listing.Listing;
+import edu.uic.marketplace.model.listing.OfferStatus;
 import edu.uic.marketplace.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;

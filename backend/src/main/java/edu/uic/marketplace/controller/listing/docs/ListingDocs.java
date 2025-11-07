@@ -48,6 +48,7 @@ public interface ListingDocs {
     ResponseEntity<CommonResponse<ListingResponse>> create(
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserDetails userDetails,
+
             @Parameter(description = "Create listing request body", required = true)
             CreateListingRequest request,
 
@@ -208,6 +209,9 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getAllActiveListings(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal UserDetails userDetails,
+
             @Parameter(description = "Page number (0-indexed)", example = "0") int page,
             @Parameter(description = "Page size", example = "20") int size,
             @Parameter(description = "Sort field (e.g., createdAt, price)", example = "createdAt") String sortBy,
@@ -225,6 +229,9 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getByCategory(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal UserDetails userDetails,
+
             @Parameter(description = "Category slug", required = true, example = "electronics") String categorySlug,
             @Parameter(description = "Page number (0-indexed)", example = "0") int page,
             @Parameter(description = "Page size", example = "20") int size,

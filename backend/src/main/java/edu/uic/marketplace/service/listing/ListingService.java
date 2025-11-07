@@ -83,10 +83,10 @@ public interface ListingService {
     /**
      * Get listing by public ID for seller view
      * @param publicId Public ID of the listing
-     * @param sellerPublicId Public ID of the seller
+     * @param sellerUsername Public ID of the seller
      * @return Listing response
      */
-    ListingResponse getListingForSeller(String publicId, String sellerPublicId);
+    ListingResponse getListingForSeller(String publicId, String sellerUsername);
 
     /**
      * Get listing by public ID for admin view
@@ -101,6 +101,7 @@ public interface ListingService {
 
     /**
      * Get all active listings (public feed)
+     * @param username who requested this
      * @param page Page number (0-indexed)
      * @param size Page size
      * @param sortBy Sort field (e.g., "createdAt", "price")
@@ -108,10 +109,11 @@ public interface ListingService {
      * @return Paginated listing summary responses
      */
     PageResponse<ListingSummaryResponse> getAllActiveListings(
-            int page, int size, String sortBy, String sortDirection);
+            String username, int page, int size, String sortBy, String sortDirection);
 
     /**
      * Get listings by category slug
+     * @param username who requested this
      * @param categorySlug Category slug
      * @param page Page number
      * @param size Page size
@@ -120,7 +122,7 @@ public interface ListingService {
      * @return Paginated listing summary responses
      */
     PageResponse<ListingSummaryResponse> getListingsByCategory(
-            String categorySlug, int page, int size, String sortBy, String sortDirection);
+            String username, String categorySlug, int page, int size, String sortBy, String sortDirection);
 
     /**
      * Get listings by seller's public ID

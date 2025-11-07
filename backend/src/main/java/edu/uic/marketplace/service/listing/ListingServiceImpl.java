@@ -1,5 +1,6 @@
 package edu.uic.marketplace.service.listing;
 
+import edu.uic.marketplace.common.util.PageMapper;
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
@@ -17,6 +18,10 @@ import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +43,7 @@ public class ListingServiceImpl implements ListingService {
 
     // services
     private final S3Service s3Service;
+    private final FavoriteService favoriteService;
 
     @Override
     @Transactional
@@ -217,9 +223,20 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional
-    public ListingResponse getListingByPublicId(String publicId, String viewerPublicId) {
+    public ListingResponse getListingByPublicId(String publicId, String username) {
 
-        return null;
+        // 1) validate
+        User user = authValidator.validateUserByUsername(username);
+        Listing listing = listingValidator.validateActiveListingByPublicId(publicId);
+
+        // 2) if viewer not seller, increase the view count
+        if (listing.getSeller() != user)
+            incrementViewCount(publicId);
+
+        // 3) get if the user favorites the listing
+        boolean isFavorite = favoriteService.isFavorited(username, publicId);
+
+        return ListingResponse.from(listing, isFavorite);
     }
 
     @Override
@@ -233,13 +250,41 @@ public class ListingServiceImpl implements ListingService {
     }
 
     @Override
-    public PageResponse<ListingSummaryResponse> getAllActiveListings(int page, int size, String sortBy, String sortDirection) {
-        return null;
+    @Transactional(readOnly = true)
+    public PageResponse<ListingSummaryResponse> getAllActiveListings(String username, int page, int size, String sortBy, String sortDirection) {
+
+        Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
+        Page<Listing> result = listingRepository.findByStatusAndDeletedAtIsNull(ListingStatus.ACTIVE, pageable);
+
+        List<ListingSummaryResponse> content = result.getContent().stream()
+                .map(listing -> {
+                    boolean isFavorite = favoriteService.isFavorited(username, listing.getPublicId());
+                    return ListingSummaryResponse.from(listing, isFavorite);
+                })
+                .toList();
+
+        return PageMapper.toPageResponse(result, content);
     }
 
     @Override
-    public PageResponse<ListingSummaryResponse> getListingsByCategory(String categorySlug, int page, int size, String sortBy, String sortDirection) {
-        return null;
+    @Transactional(readOnly = true)
+    public PageResponse<ListingSummaryResponse> getListingsByCategory(String username, String categorySlug, int page, int size, String sortBy, String sortDirection) {
+
+        categoryValidator.validateLeafCategory(categorySlug);
+
+        Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
+
+        Page<Listing> result = listingRepository.findByCategory_SlugAndStatusAndDeletedAtIsNull(
+                categorySlug, ListingStatus.ACTIVE, pageable);
+
+        List<ListingSummaryResponse> content = result.getContent().stream()
+                .map(listing -> {
+                    boolean isFavorite = favoriteService.isFavorited(username, listing.getPublicId());
+                    return ListingSummaryResponse.from(listing, isFavorite);
+                })
+                .toList();
+
+        return PageMapper.toPageResponse(result, content);
     }
 
     @Override
@@ -265,7 +310,10 @@ public class ListingServiceImpl implements ListingService {
     }
 
     @Override
-    public Long getListingCountBySeller(String sellerPublicId) {
+    public Long getListingCountBySeller(String sellerUsername) {
+
+        User seller = authValidator.validateUserByUsername(sellerUsername);
+//        listingRepository.findBySeller_UsernameAndStatusAndDeletedAtIsNull(sellerUsername, ListingStatus.ACTIVE);
         return null;
     }
 
@@ -315,4 +363,12 @@ public class ListingServiceImpl implements ListingService {
         }
     }
 
+    private Pageable buildPageable(int page, int size, String sortBy, String sortDirection) {
+
+        List<String> allowed = List.of("createdAt", "price", "viewCount", "favoriteCount");
+        String field = allowed.contains(sortBy) ? sortBy : "createdAt";
+
+        Sort.Direction dir = "ASC".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return PageRequest.of(page, size, Sort.by(dir, field));
+    }
 }

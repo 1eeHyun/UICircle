@@ -9,5 +9,4 @@ public class UicMarketplaceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(UicMarketplaceApplication.class, args);
 	}
-
 }

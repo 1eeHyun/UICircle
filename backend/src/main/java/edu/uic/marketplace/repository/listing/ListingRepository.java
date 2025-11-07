@@ -45,24 +45,24 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
     // =================================================================
 
     /**
-     * Find all listings by seller's public ID where not deleted
+     * Find all listings by seller's username where not deleted
      */
-    Page<Listing> findBySeller_PublicIdAndDeletedAtIsNull(String sellerPublicId, Pageable pageable);
+    Page<Listing> findBySeller_PublicIdAndDeletedAtIsNull(String username, Pageable pageable);
 
     /**
-     * Find listings by seller's public ID and status where not deleted
+     * Find listings by seller's username and status where not deleted
      */
-    Page<Listing> findBySeller_PublicIdAndStatusAndDeletedAtIsNull(String sellerPublicId, ListingStatus status, Pageable pageable);
+    Page<Listing> findBySeller_UsernameAndStatusAndDeletedAtIsNull(String username, ListingStatus status, Pageable pageable);
 
     /**
      * Find listings by seller's public ID with status in set where not deleted
      */
-    Page<Listing> findBySeller_PublicIdAndStatusInAndDeletedAtIsNull(String sellerPublicId, Collection<ListingStatus> statuses, Pageable pageable);
+    Page<Listing> findBySeller_PublicIdAndStatusInAndDeletedAtIsNull(String username, Collection<ListingStatus> statuses, Pageable pageable);
 
     /**
-     * Count listings by seller's public ID where not deleted
+     * Count listings by seller's username where not deleted
      */
-    Long countBySeller_PublicIdAndDeletedAtIsNull(String sellerPublicId);
+    Long countBySeller_UsernameAndDeletedAtIsNull(String username);
 
     /**
      * Count listings by seller's public ID and status where not deleted

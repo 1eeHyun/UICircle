@@ -1,6 +1,8 @@
 package edu.uic.marketplace.repository.listing;
 
 import edu.uic.marketplace.model.listing.Favorite;
+import edu.uic.marketplace.model.listing.Listing;
+import edu.uic.marketplace.model.user.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,12 +19,12 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Favorite.Fav
     /**
      * Find favorite by user and listing
      */
-    Optional<Favorite> findByUser_UserIdAndListing_ListingId(Long userId, Long listingId);
+    Optional<Favorite> findByUser_UserIdAndListing_ListingId(String username, Long listingId);
     
     /**
      * Check if user favorited listing
      */
-    boolean existsByUser_UserIdAndListing_ListingId(Long userId, Long listingId);
+    boolean existsByUserAndListing(User user, Listing listing);
     
     /**
      * Find all favorites by user
@@ -48,7 +50,7 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Favorite.Fav
     /**
      * Delete favorite by user and listing
      */
-    void deleteByUser_UserIdAndListing_ListingId(Long userId, Long listingId);
+    void deleteByUserAndListing(User user, Listing listing);
     
     /**
      * Delete all favorites for a listing
