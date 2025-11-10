@@ -19,12 +19,12 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     /**
      * Find verification by user
      */
-    Optional<EmailVerification> findByUser_UserId(Long userId);
+    Optional<EmailVerification> findByUser_Username(String username);
     
     /**
      * Find latest verification by user
      */
-    Optional<EmailVerification> findFirstByUser_UserIdOrderByCreatedAtDesc(Long userId);
+    Optional<EmailVerification> findFirstByUser_UsernameOrderByCreatedAtDesc(String username);
     
     /**
      * Find expired tokens
@@ -34,7 +34,7 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     /**
      * Delete verifications by user
      */
-    void deleteByUser_UserId(Long userId);
+    void deleteByUser_Username(String username);
     
     /**
      * Delete expired tokens

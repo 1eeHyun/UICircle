@@ -8,6 +8,8 @@ import edu.uic.marketplace.model.user.UserRole;
 import edu.uic.marketplace.model.user.UserStatus;
 import edu.uic.marketplace.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,7 @@ public class AuthValidator {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+
     // =================================================================
     // Authentication Methods
     // =================================================================
@@ -27,16 +30,24 @@ public class AuthValidator {
      * Validate user login credentials
      * Returns the authenticated user if credentials are valid
      */
-    public User validateLogin(String userEmail, String password) {
+    public User validateLogin(String emailOrUsername, String password) {
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User with email " + userEmail + " not found"));
+        String input = (emailOrUsername == null) ? "" : emailOrUsername.trim();
+        boolean isEmail = input.contains("@");
 
-        if (!passwordEncoder.matches(password, user.getPasswordHash()))
-            throw new UserNotFoundException("Invalid credentials");
+        String key = input.toLowerCase();
 
-        if (!user.isActive())
-            throw new UserNotAuthorizedException("User account is not active");
+        User user = isEmail
+                ? userRepository.findByEmailIgnoreCase(key).orElse(null)
+                : userRepository.findByUsernameIgnoreCase(key).orElse(null);
+
+        if (user == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new UserNotFoundException("Invalid email/username or password");
+        }
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new UserNotFoundException("Invalid email/username or password");
+        }
 
         return user;
     }
@@ -119,28 +130,48 @@ public class AuthValidator {
     /**
      * Validate that user is logged in
      */
-    public void validateLoggedIn(UserDetails userDetails) {
+    public void validateLoggedIn() {
 
-        if (userDetails == null)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || "anonymousUser".equals(auth.getPrincipal())) {
             throw new UserNotLoggedInException("User is not logged in");
+        }
     }
 
     /**
      * Extract username from user details
      */
-    public String extractUsername(UserDetails userDetails) {
+    public String extractUsername() {
 
-        validateLoggedIn(userDetails);
-        return userDetails.getUsername();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UserNotLoggedInException("User is not logged in");
+        }
+
+        Object principal = auth.getPrincipal();
+
+        if (principal instanceof UserDetails ud) {
+            return ud.getUsername();
+        }
+        if (principal instanceof String s && !"anonymousUser".equals(s)) {
+            return s;
+        }
+
+        throw new UserNotLoggedInException("User is not logged in");
     }
 
     /**
      * Get logged-in user from user details
      */
-    public User getLoggedInUser(UserDetails userDetails) {
+    public User getLoggedInUser() {
 
-        String username = extractUsername(userDetails);
-        return validateUserByUsername(username);
+        String username = extractUsername();
+        return userRepository.findByUsernameIgnoreCase(username)
+                .or(() -> userRepository.findByEmailIgnoreCase(username))
+                .filter(User::isActive)
+                .orElseThrow(() -> new UserNotAuthorizedException("User account is not active"));
     }
 
     // =================================================================

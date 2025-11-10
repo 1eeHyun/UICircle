@@ -17,7 +17,7 @@ import java.util.List;
         name = "Listing Categories",
         description = "Endpoints for browsing, managing, and retrieving categories"
 )
-public interface ListingCategoryDocs {
+public interface ListingCategoryApiDocs {
 
     @Operation(
             summary = "Get all categories (tree structure)",

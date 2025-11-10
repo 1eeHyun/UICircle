@@ -16,8 +16,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,7 +25,7 @@ import java.util.List;
         name = "Listings",
         description = "Endpoints for creating, updating, browsing, and retrieving marketplace listings"
 )
-public interface ListingDocs {
+public interface ListingApiDocs {
 
     // ---------------------------------------------------------------------
     // Create / Update / Delete & Status transitions
@@ -46,8 +44,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<ListingResponse>> create(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
 
             @Parameter(description = "Create listing request body", required = true)
             CreateListingRequest request,
@@ -69,8 +65,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<ListingResponse>> update(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId,
             @Parameter(description = "Update listing request body", required = true) UpdateListingRequest request,
 
@@ -88,8 +82,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<Void>> delete(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -104,8 +96,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<Void>> inactivate(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -120,8 +110,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<Void>> reactivate(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -136,8 +124,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<Void>> markAsSold(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -156,8 +142,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<ListingResponse>> getByPublicId(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -173,8 +157,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<ListingResponse>> getForSeller(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -189,8 +171,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<ListingResponse>> getForAdmin(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "Listing public ID", required = true) String publicId
     );
 
@@ -209,8 +189,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getAllActiveListings(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
 
             @Parameter(description = "Page number (0-indexed)", example = "0") int page,
             @Parameter(description = "Page size", example = "20") int size,
@@ -229,8 +207,6 @@ public interface ListingDocs {
             }
     )
     ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getByCategory(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
 
             @Parameter(description = "Category slug", required = true, example = "electronics") String categorySlug,
             @Parameter(description = "Page number (0-indexed)", example = "0") int page,

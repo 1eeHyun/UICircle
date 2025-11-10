@@ -1,6 +1,6 @@
 package edu.uic.marketplace.controller.listing.api;
 
-import edu.uic.marketplace.controller.listing.docs.ListingCategoryDocs;
+import edu.uic.marketplace.controller.listing.docs.ListingCategoryApiDocs;
 import edu.uic.marketplace.dto.response.common.CommonResponse;
 import edu.uic.marketplace.dto.response.listing.CategoryResponse;
 import edu.uic.marketplace.service.listing.CategoryService;
@@ -13,7 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-public class ListingCategoryApi implements ListingCategoryDocs {
+public class ListingCategoryController implements ListingCategoryApiDocs {
 
     private final CategoryService categoryService;
 

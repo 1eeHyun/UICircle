@@ -28,8 +28,6 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final AuthValidator authValidator;
     private final ListingValidator listingValidator;
 
-    private final ListingService listingService;
-
     @Override
     @Transactional
     public void toggleFavorite(String username, String listingPublicId) {
@@ -79,7 +77,7 @@ public class FavoriteServiceImpl implements FavoriteService {
 
         Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        Page<Favorite> favPage = favoriteRepository.findByUser_UserId(user.getUserId(), pageable);
+        Page<Favorite> favPage = favoriteRepository.findByUser_Username(user.getUsername(), pageable);
 
         List<ListingSummaryResponse> content = favPage.getContent().stream()
                 .map(Favorite::getListing)

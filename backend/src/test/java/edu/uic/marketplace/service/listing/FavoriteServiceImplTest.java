@@ -19,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -137,25 +136,30 @@ class FavoriteServiceImplTest {
             // given
             String username = "lee";
 
-            try {
-                Field f = User.class.getDeclaredField("userId");
-                f.setAccessible(true);
-                f.set(user, 10L);
-            } catch (Exception ignore) {}
+            User user = User.builder()
+                    .userId(1L)
+                    .username(username)
+                    .build();
 
             when(authValidator.validateUserByUsername(username)).thenReturn(user);
 
             Listing active = new Listing();
             active.setStatus(ListingStatus.ACTIVE);
+
             Listing inactive = new Listing();
             inactive.setStatus(ListingStatus.INACTIVE);
 
             Favorite f1 = Favorite.builder().user(user).listing(active).build();
             Favorite f2 = Favorite.builder().user(user).listing(inactive).build();
 
-            Page<Favorite> page = new PageImpl<>(List.of(f1, f2));
+            Page<Favorite> page = new PageImpl<>(
+                    List.of(f1, f2),
+                    PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")),
+                    2
+            );
 
-            when(favoriteRepository.findByUser_UserId(anyLong(), any(Pageable.class)))
+
+            when(favoriteRepository.findByUser_Username(eq(username), any(Pageable.class)))
                     .thenReturn(page);
 
             // when
@@ -164,8 +168,10 @@ class FavoriteServiceImplTest {
             // then
             assertThat(res.getContent()).hasSize(1);
             assertThat(res.getContent().get(0).getIsFavorite()).isTrue();
-            verify(favoriteRepository).findByUser_UserId(anyLong(), any(Pageable.class));
+
+            verify(favoriteRepository).findByUser_Username(eq(username), any(Pageable.class));
         }
+
     }
 
     @Nested

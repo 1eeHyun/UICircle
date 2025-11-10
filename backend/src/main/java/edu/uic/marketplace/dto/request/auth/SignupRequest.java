@@ -11,6 +11,10 @@ import lombok.*;
 @Builder
 public class SignupRequest {
 
+    @NotBlank(message = "Username is required")
+    @Size(min = 6, max = 14, message = "Username must be between 1 and 50 characters")
+    private String username;
+
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     @Pattern(

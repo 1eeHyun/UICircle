@@ -1,6 +1,8 @@
 package edu.uic.marketplace.model.user;
 
 public enum UserStatus {
+
+    PENDING("Pending"),
     ACTIVE("Active"),
     SUSPENDED("Suspended"),
     DELETED("Deleted");

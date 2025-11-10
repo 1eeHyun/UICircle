@@ -1,6 +1,6 @@
 package edu.uic.marketplace.controller.listing.api;
 
-import edu.uic.marketplace.controller.listing.docs.ListingDocs;
+import edu.uic.marketplace.controller.listing.docs.ListingApiDocs;
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
@@ -15,8 +15,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,7 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/listings")
 @RequiredArgsConstructor
-public class ListingApi implements ListingDocs {
+public class ListingController implements ListingApiDocs {
 
     private final AuthValidator authValidator;
     private final ListingService listingService;
@@ -35,11 +33,10 @@ public class ListingApi implements ListingDocs {
     @Override
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CommonResponse<ListingResponse>> create(
-            @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestPart("request") CreateListingRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         ListingResponse res = listingService.createListing(username, request, images);
 
         return ResponseEntity.ok(CommonResponse.success(res));
@@ -48,12 +45,11 @@ public class ListingApi implements ListingDocs {
     @Override
     @PatchMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CommonResponse<ListingResponse>> update(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId,
             @Valid @RequestPart("request") UpdateListingRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         ListingResponse res = listingService.updateListing(publicId, username, request, images);
 
         return ResponseEntity.ok(CommonResponse.success(res));
@@ -64,10 +60,9 @@ public class ListingApi implements ListingDocs {
     @Override
     @DeleteMapping
     public ResponseEntity<CommonResponse<Void>> delete(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         listingService.deleteListing(publicId, username);
 
         return ResponseEntity.ok(CommonResponse.success());
@@ -76,10 +71,9 @@ public class ListingApi implements ListingDocs {
     @Override
     @PatchMapping("/inactivate")
     public ResponseEntity<CommonResponse<Void>> inactivate(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         listingService.inactivateListing(publicId, username);
 
         return ResponseEntity.ok(CommonResponse.success());
@@ -88,10 +82,9 @@ public class ListingApi implements ListingDocs {
     @Override
     @PatchMapping("/reactivate")
     public ResponseEntity<CommonResponse<Void>> reactivate(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         listingService.reactivateListing(publicId, username);
 
         return ResponseEntity.ok(CommonResponse.success());
@@ -100,10 +93,9 @@ public class ListingApi implements ListingDocs {
     @Override
     @PatchMapping("/sold")
     public ResponseEntity<CommonResponse<Void>> markAsSold(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         listingService.markAsSold(publicId, username);
 
         return ResponseEntity.ok(CommonResponse.success());
@@ -114,10 +106,9 @@ public class ListingApi implements ListingDocs {
     @Override
     @GetMapping
     public ResponseEntity<CommonResponse<ListingResponse>> getByPublicId(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         ListingResponse res = listingService.getListingByPublicId(publicId, username);
 
         return ResponseEntity.ok(CommonResponse.success(res));
@@ -126,10 +117,9 @@ public class ListingApi implements ListingDocs {
     @Override
     @GetMapping("/seller")
     public ResponseEntity<CommonResponse<ListingResponse>> getForSeller(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
-        String sellerPublicId = authValidator.extractUsername(userDetails);
+        String sellerPublicId = authValidator.extractUsername();
         ListingResponse res = listingService.getListingForSeller(publicId, sellerPublicId);
 
         return ResponseEntity.ok(CommonResponse.success(res));
@@ -138,7 +128,6 @@ public class ListingApi implements ListingDocs {
     @Override
     @GetMapping("/admin")
     public ResponseEntity<CommonResponse<ListingResponse>> getForAdmin(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("publicId") String publicId) {
 
         return null;
@@ -152,13 +141,12 @@ public class ListingApi implements ListingDocs {
     @Override
     @GetMapping("/active")
     public ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getAllActiveListings(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") int size,
             @RequestParam(value = "sortBy", required = false, defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sortDirection", required = false, defaultValue = "DESC") String sortDirection) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         PageResponse<ListingSummaryResponse> res =
                 listingService.getAllActiveListings(username, page, size, sortBy, sortDirection);
 
@@ -168,14 +156,13 @@ public class ListingApi implements ListingDocs {
     @Override
     @GetMapping("/category")
     public ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getByCategory(
-            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("categorySlug") String categorySlug,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") int size,
             @RequestParam(value = "sortBy", required = false, defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sortDirection", required = false, defaultValue = "DESC") String sortDirection) {
 
-        String username = authValidator.extractUsername(userDetails);
+        String username = authValidator.extractUsername();
         PageResponse<ListingSummaryResponse> res =
                 listingService.getListingsByCategory(username, categorySlug, page, size, sortBy, sortDirection);
 

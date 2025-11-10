@@ -15,50 +15,26 @@ import java.util.Optional;
 
 @Repository
 public interface FavoriteRepository extends JpaRepository<Favorite, Favorite.FavoriteId> {
-    
+
     /**
-     * Find favorite by user and listing
+     * Find favorite by username and listing
      */
-    Optional<Favorite> findByUser_UserIdAndListing_ListingId(String username, Long listingId);
-    
-    /**
-     * Check if user favorited listing
-     */
+    Optional<Favorite> findByUser_UsernameAndListing_ListingId(String username, Long listingId);
+
     boolean existsByUserAndListing(User user, Listing listing);
-    
-    /**
-     * Find all favorites by user
-     */
-    Page<Favorite> findByUser_UserId(Long userId, Pageable pageable);
-    
-    /**
-     * Count favorites for listing
-     */
+
+    Page<Favorite> findByUser_Username(String username, Pageable pageable);
+
     Long countByListing_ListingId(Long listingId);
-    
-    /**
-     * Count favorites by user
-     */
-    Long countByUser_UserId(Long userId);
-    
-    /**
-     * Get user's favorite listing IDs
-     */
-    @Query("SELECT f.listing.listingId FROM Favorite f WHERE f.user.userId = :userId")
-    List<Long> findListingIdsByUser_UserId(@Param("userId") Long userId);
-    
-    /**
-     * Delete favorite by user and listing
-     */
+
+    Long countByUser_Username(String username);
+
+    @Query("SELECT f.listing.listingId FROM Favorite f WHERE f.user.username = :username")
+    List<Long> findListingIdsByUser_Username(@Param("username") String username);
+
     void deleteByUserAndListing(User user, Listing listing);
-    
-    /**
-     * Delete all favorites for a listing
-     */
+
     void deleteByListing_ListingId(Long listingId);
-    
-    /**
-     * Delete all favorites by user
-     */
-    void deleteByUser_UserId(Long userId);
+
+    void deleteByUser_Username(String username);
 }

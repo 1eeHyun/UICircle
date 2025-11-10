@@ -10,8 +10,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -21,7 +19,7 @@ import java.util.List;
         name = "Listing Favorite",
         description = "Endpoints for toggling favorite and retrieving favorite lists"
 )
-public interface FavoriteDocs {
+public interface FavoriteApiDocs {
 
     @Operation(
             summary = "Toggle favorite",
@@ -37,9 +35,6 @@ public interface FavoriteDocs {
             }
     )
     ResponseEntity<CommonResponse<Void>> toggle(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
-
             @Parameter(description = "Public ID of the listing to toggle favorite", required = true)
             @PathVariable("publicId") String listingPublicId
     );
@@ -56,9 +51,6 @@ public interface FavoriteDocs {
             }
     )
     ResponseEntity<CommonResponse<PageResponse<ListingSummaryResponse>>> getMyFavorites(
-            @Parameter(hidden = true)
-            @AuthenticationPrincipal UserDetails userDetails,
-
             @Parameter(description = "Page number (0-based)") @RequestParam(value = "page", required = false) Integer page,
             @Parameter(description = "Page size") @RequestParam(value = "size", required = false) Integer size
     );
