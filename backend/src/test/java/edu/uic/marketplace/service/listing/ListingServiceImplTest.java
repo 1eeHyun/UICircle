@@ -10,18 +10,23 @@ import edu.uic.marketplace.service.common.S3Service;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +36,7 @@ class ListingServiceImplTest {
     @Mock private ListingValidator listingValidator;
     @Mock private AuthValidator authValidator;
     @Mock private CategoryValidator categoryValidator;
+    @Mock private FavoriteService favoriteService;
     @Mock private S3Service s3Service;
 
     @InjectMocks
@@ -70,7 +76,6 @@ class ListingServiceImplTest {
     @Test
     @DisplayName("createListing: saves listing with uploaded images and returns response")
     void createListing_ok_withImages() {
-
         // given
         String username = "lee";
         User seller = user(username);
@@ -113,9 +118,70 @@ class ListingServiceImplTest {
     }
 
     @Test
+    @DisplayName("createListing: no images is allowed")
+    void createListing_noImages_ok() {
+        // given
+        String username = "lee";
+        User seller = user(username);
+        Category cat = category("Books", "books");
+
+        CreateListingRequest req = CreateListingRequest.builder()
+                .title("Book")
+                .description("Nice book for sale")
+                .price(new BigDecimal("12.34"))
+                .condition(ItemCondition.GOOD)
+                .slug("books")
+                .build();
+
+        given(authValidator.validateUserByUsername(username)).willReturn(seller);
+        given(categoryValidator.validateLeafCategory("books")).willReturn(cat);
+        willAnswer(invocation -> invocation.getArgument(0))
+                .given(listingRepository).save(any(Listing.class));
+
+        // when
+        ListingResponse res = service.createListing(username, req, null);
+
+        // then
+        assertThat(res.getTitle()).isEqualTo("Book");
+        assertThat(res.getImages()).isEmpty();
+        then(s3Service).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("createListing: rejects more than 10 images")
+    void createListing_tooManyImages() {
+        // given
+        String username = "lee";
+        User seller = user(username);
+        Category cat = category("Books", "books");
+
+        CreateListingRequest req = CreateListingRequest.builder()
+                .title("Book").description("D").price(new BigDecimal("1"))
+                .condition(ItemCondition.GOOD).slug("books").build();
+
+        List<MultipartFile> images = IntStream.range(0, 11)
+                .mapToObj(i -> new MockMultipartFile(
+                        "images",
+                        "i" + i + ".jpg",
+                        "image/jpeg",
+                        new byte[]{1}
+                ))
+                .collect(Collectors.toList());
+
+        given(authValidator.validateUserByUsername(username)).willReturn(seller);
+        given(categoryValidator.validateLeafCategory("books")).willReturn(cat);
+
+        // when / then
+        assertThatThrownBy(() -> service.createListing(username, req, images))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("up to 10");
+
+        then(listingRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("createListing: if an image upload fails, already-uploaded files are cleaned up")
     void createListing_uploadFails_rollsBackUploaded() {
-
         // given
         String username = "lee";
         User seller = user(username);
@@ -147,16 +213,14 @@ class ListingServiceImplTest {
     // updateListing (images == null : keep | empty : clear | replace)
     // ====================================================================================
     @Test
-    @DisplayName("updateListing: fields partially updated (no image change when images == null)")
+    @DisplayName("updateListing: partial field updates with images == null (no image changes)")
     void updateListing_partial_noImageChange() {
-
         // given
         String username = "lee";
         User seller = user(username);
         Category cat = category("Books", "books");
         Listing existing = listing(seller, cat);
         existing.setPublicId("pub-1");
-        // seed images
         existing.getImages().add(ListingImage.builder()
                 .listing(existing).imageUrl("https://s3/old.jpg").displayOrder(0).build());
 
@@ -174,17 +238,14 @@ class ListingServiceImplTest {
         // then
         assertThat(res.getTitle()).isEqualTo("Edited Title");
         assertThat(res.getPrice()).isEqualByComparingTo("99.99");
-        // images untouched
         assertThat(res.getImages()).hasSize(1);
         assertThat(res.getImages().get(0).getImageUrl()).isEqualTo("https://s3/old.jpg");
-
         then(s3Service).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("updateListing: images empty list => delete all old images (S3 + DB)")
     void updateListing_imagesEmpty_removesAll() {
-
         // given
         String username = "lee";
         User seller = user(username);
@@ -211,7 +272,6 @@ class ListingServiceImplTest {
     @Test
     @DisplayName("updateListing: replace images => deletes old and uploads new in order")
     void updateListing_replaceImages_ok() {
-
         // given
         String username = "lee";
         User seller = user(username);
@@ -237,7 +297,6 @@ class ListingServiceImplTest {
         // then
         assertThat(res.getImages()).extracting(i -> i.getImageUrl())
                 .containsExactly("https://s3/x.jpg", "https://s3/y.jpg");
-        // order check
         assertThat(res.getImages()).extracting(i -> i.getDisplayOrder())
                 .containsExactly(0, 1);
     }
@@ -245,7 +304,6 @@ class ListingServiceImplTest {
     @Test
     @DisplayName("updateListing: when upload fails mid-way, newly uploaded are reverted (deleteByUrl)")
     void updateListing_replaceImages_partialFail_rollbackNewOnes() {
-
         // given
         String username = "lee";
         User seller = user(username);
@@ -269,7 +327,6 @@ class ListingServiceImplTest {
         assertThatThrownBy(() -> service.updateListing("pub-1", username, req, List.of(ok, bad)))
                 .isInstanceOf(RuntimeException.class);
 
-        // cleanup of the already-uploaded new one
         then(s3Service).should().deleteByUrl("https://s3/ok.jpg");
     }
 
@@ -277,7 +334,7 @@ class ListingServiceImplTest {
     // state transitions
     // ====================================================================================
     @Test
-    @DisplayName("deleteListing: soft delete")
+    @DisplayName("deleteListing: soft delete sets DELETED and deletedAt")
     void deleteListing_softDelete() {
         String username = "lee";
         User seller = user(username);
@@ -295,9 +352,8 @@ class ListingServiceImplTest {
     }
 
     @Test
-    @DisplayName("inactivate/reactivate/markAsSold: valid transitions")
+    @DisplayName("inactivate/reactivate/markAsSold: happy-path state transitions")
     void transitions_ok() {
-
         String username = "lee";
         User seller = user(username);
 
@@ -327,9 +383,25 @@ class ListingServiceImplTest {
     }
 
     @Test
+    @DisplayName("reactivateListing: throws when state is not INACTIVE")
+    void reactivate_invalidState() {
+        String username = "lee";
+        User seller = user(username);
+        Listing l = listing(seller, category("C","c")); // default ACTIVE
+        l.setPublicId("pub-1");
+
+        given(authValidator.validateUserByUsername(username)).willReturn(seller);
+        given(listingValidator.validateListingByPublicId("pub-1")).willReturn(l);
+        willDoNothing().given(listingValidator).validateSellerOwnership(seller, l.getSeller());
+
+        assertThatThrownBy(() -> service.reactivateListing("pub-1", username))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("INACTIVE");
+    }
+
+    @Test
     @DisplayName("incrementViewCount: increments view counter on active listing")
     void incrementViewCount_ok() {
-
         Listing l = listing(user("lee"), category("C","c"));
         l.setPublicId("pub-1");
 

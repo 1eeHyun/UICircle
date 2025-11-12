@@ -2,6 +2,7 @@ package edu.uic.marketplace.service.listing;
 
 import edu.uic.marketplace.common.util.PageMapper;
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
+import edu.uic.marketplace.dto.request.listing.NearbyListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
 import edu.uic.marketplace.dto.response.common.PageResponse;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -196,7 +198,7 @@ public class ListingServiceImpl implements ListingService {
 
         // 2) validate listing is inactivate
         if (listing.getStatus() != ListingStatus.INACTIVE)
-            throw new IllegalStateException("Only INACTIVE listing can be marked as SOLD.");
+            throw new IllegalStateException("Only INACTIVE listing can be ACTIVE.");
 
         // 2) reactivate
         listing.setStatus(ListingStatus.ACTIVE);
@@ -230,8 +232,8 @@ public class ListingServiceImpl implements ListingService {
         Listing listing = listingValidator.validateActiveListingByPublicId(publicId);
 
         // 2) if viewer not seller, increase the view count
-        if (listing.getSeller() != user)
-            incrementViewCount(publicId);
+        boolean viewerIsSeller = listing.getSeller().getUserId().equals(user.getUserId());
+        if (!viewerIsSeller) incrementViewCount(publicId);
 
         // 3) get if the user favorites the listing
         boolean isFavorite = favoriteService.isFavorited(username, publicId);
@@ -288,18 +290,100 @@ public class ListingServiceImpl implements ListingService {
     }
 
     @Override
-    public PageResponse<ListingSummaryResponse> getListingsBySeller(String sellerPublicId, ListingStatus status, int page, int size) {
+    @Transactional(readOnly = true)
+    public PageResponse<ListingSummaryResponse> getListingsBySeller(String sellerUsername, ListingStatus status, int page, int size) {
+
+
         return null;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<ListingSummaryResponse> searchListings(SearchListingRequest request) {
-        return null;
+
+        // Validate price range
+        if (request.getMinPrice() != null && request.getMaxPrice() != null
+                && request.getMinPrice().compareTo(request.getMaxPrice()) > 0) {
+            throw new IllegalArgumentException("minPrice must be <= maxPrice");
+        }
+
+        int page = (request.getPage() == null || request.getPage() < 1) ? 0 : request.getPage() - 1;
+        int size = (request.getSize() == null || request.getSize() < 1) ? 20 : request.getSize();
+
+        String sortBy = (request.getSortBy() == null || request.getSortBy().isBlank()) ? "createdAt" : request.getSortBy();
+        String sortDir = (request.getSortOrder() != null && request.getSortOrder().equalsIgnoreCase("asc")) ? "ASC" : "DESC";
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+
+        Specification<Listing> spec = (root, q, cb) -> cb.and(
+                cb.isNull(root.get("deletedAt")),
+                cb.equal(root.get("status"), request.getStatus())
+        );
+
+        // Keyword
+        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+            String like = "%" + request.getKeyword().trim().toLowerCase() + "%";
+            spec = spec.and((root, q, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("title")), like),
+                    cb.like(cb.lower(root.get("description")), like)
+            ));
+        }
+
+        // Category
+        if (request.getCategorySlug() != null && !request.getCategorySlug().isBlank()) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("category").get("slug"), request.getCategorySlug()));
+        }
+
+        // Condition
+        if (request.getCondition() != null) {
+            spec = spec.and((root, q, cb) -> cb.equal(root.get("condition"), request.getCondition()));
+        }
+
+        // Price
+        if (request.getMinPrice() != null) {
+            spec = spec.and((root, q, cb) -> cb.greaterThanOrEqualTo(root.get("price"), request.getMinPrice()));
+        }
+        if (request.getMaxPrice() != null) {
+            spec = spec.and((root, q, cb) -> cb.lessThanOrEqualTo(root.get("price"), request.getMaxPrice()));
+        }
+
+        Page<Listing> pageResult = listingRepository.findAll(spec, pageable);
+
+        List<ListingSummaryResponse> content = pageResult.getContent().stream()
+                .map(l -> ListingSummaryResponse.from(l, false))
+                .toList();
+
+        return PageMapper.toPageResponse(pageResult, content);
     }
 
     @Override
-    public List<ListingSummaryResponse> getNearbyListings(Double latitude, Double longitude, Double radiusMiles, String categorySlug) {
-        return null;
+    @Transactional(readOnly = true)
+    public List<ListingSummaryResponse> getNearbyListings(NearbyListingRequest request) {
+
+        Double latitude = request.getLatitude();
+        Double longitude = request.getLongitude();
+        Double radiusMiles = request.getRadiusMiles();
+        String categorySlug = request.getCategorySlug();
+
+        if (latitude == null || longitude == null || radiusMiles == null) {
+            throw new IllegalArgumentException("latitude, longitude, radiusMiles are required");
+        }
+
+        // 1) Only ACTIVE within a range
+        List<Listing> nearby = listingRepository.findNearbyWithinRadius(
+                latitude, longitude, radiusMiles, ListingStatus.ACTIVE);
+
+        // 2) memory filter when there's category slug
+        if (categorySlug != null && !categorySlug.isBlank()) {
+            nearby = nearby.stream()
+                    .filter(l -> l.getCategory() != null
+                            && categorySlug.equals(l.getCategory().getSlug()))
+                    .toList();
+        }
+
+        // 3) mapping to response
+        return nearby.stream()
+                .map(ListingSummaryResponse::from) // from(listing) → isFavorite=false
+                .toList();
     }
 
     @Override

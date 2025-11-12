@@ -1,6 +1,7 @@
 package edu.uic.marketplace.service.listing;
 
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
+import edu.uic.marketplace.dto.request.listing.NearbyListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
 import edu.uic.marketplace.dto.response.common.PageResponse;
@@ -126,14 +127,14 @@ public interface ListingService {
 
     /**
      * Get listings by seller's public ID
-     * @param sellerPublicId Seller's public ID
+     * @param sellerUsername Seller's public ID
      * @param status Listing status filter (optional)
      * @param page Page number
      * @param size Page size
      * @return Paginated listing summary responses
      */
     PageResponse<ListingSummaryResponse> getListingsBySeller(
-            String sellerPublicId, ListingStatus status, int page, int size);
+            String sellerUsername, ListingStatus status, int page, int size);
 
     /**
      * Search listings by keyword
@@ -144,14 +145,10 @@ public interface ListingService {
 
     /**
      * Get nearby listings within radius
-     * @param latitude User's latitude
-     * @param longitude User's longitude
-     * @param radiusMiles Search radius in miles
-     * @param categorySlug Category filter (optional)
+     * @param request
      * @return List of nearby listings
      */
-    List<ListingSummaryResponse> getNearbyListings(
-            Double latitude, Double longitude, Double radiusMiles, String categorySlug);
+    List<ListingSummaryResponse> getNearbyListings(NearbyListingRequest request);
 
     // =================================================================
     // Listing Statistics - Use publicId

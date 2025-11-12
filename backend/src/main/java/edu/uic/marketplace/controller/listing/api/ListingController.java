@@ -2,6 +2,7 @@ package edu.uic.marketplace.controller.listing.api;
 
 import edu.uic.marketplace.controller.listing.docs.ListingApiDocs;
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
+import edu.uic.marketplace.dto.request.listing.NearbyListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
 import edu.uic.marketplace.dto.response.common.CommonResponse;
@@ -195,13 +196,10 @@ public class ListingController implements ListingApiDocs {
     @Override
     @GetMapping("/nearby")
     public ResponseEntity<CommonResponse<List<ListingSummaryResponse>>> getNearby(
-            @RequestParam("latitude") Double latitude,
-            @RequestParam("longitude") Double longitude,
-            @RequestParam(value = "radiusMiles", required = false, defaultValue = "10") Double radiusMiles,
-            @RequestParam(value = "categorySlug", required = false) String categorySlug) {
+            @Valid @RequestBody NearbyListingRequest request) {
 
-        List<ListingSummaryResponse> res =
-                listingService.getNearbyListings(latitude, longitude, radiusMiles, categorySlug);
+//        Double latitude, Double longitude, Double radiusMiles, String categorySlug
+        List<ListingSummaryResponse> res = listingService.getNearbyListings(request);
 
         return ResponseEntity.ok(CommonResponse.success(res));
     }

@@ -23,9 +23,12 @@ public class NearbyListingRequest {
     private Double longitude;
 
     @NotNull(message = "Radius is required")
-    @DecimalMin(value = "0.1", message = "Radius must be at least 0.1 km")
-    @DecimalMax(value = "100.0", message = "Radius must not exceed 100 km")
-    private Double radiusKm;
+    @DecimalMin(value = "0.1", message = "Radius must be at least 0.1 miles")
+    @DecimalMax(value = "62.1", message = "Radius must not exceed 62.1 miles") // 100km ≈ 62.1mi
+    private Double radiusMiles;
+
+    @NotNull(message = "Category is required")
+    private String categorySlug;
 
     @Builder.Default
     private String unit = "mi";  // km or mi
