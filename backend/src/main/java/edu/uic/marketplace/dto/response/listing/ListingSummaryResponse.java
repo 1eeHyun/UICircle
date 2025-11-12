@@ -15,7 +15,7 @@ import java.time.Instant;
 @Builder
 public class ListingSummaryResponse {
 
-    private Long listingId;
+    private String publicId;
     private String title;
     private BigDecimal price;
     private ItemCondition condition;
@@ -36,7 +36,7 @@ public class ListingSummaryResponse {
                 : listing.getImages().get(0).getImageUrl();
 
         return ListingSummaryResponse.builder()
-                .listingId(listing.getListingId())
+                .publicId(listing.getPublicId())
                 .title(listing.getTitle())
                 .price(listing.getPrice())
                 .condition(listing.getCondition())

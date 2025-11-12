@@ -1,6 +1,7 @@
 package edu.uic.marketplace.controller.listing.docs;
 
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
+import edu.uic.marketplace.dto.request.listing.NearbyListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
 import edu.uic.marketplace.dto.request.listing.UpdateListingRequest;
 import edu.uic.marketplace.dto.response.common.CommonResponse;
@@ -258,10 +259,8 @@ public interface ListingApiDocs {
             }
     )
     ResponseEntity<CommonResponse<List<ListingSummaryResponse>>> getNearby(
-            @Parameter(description = "Latitude", required = true, example = "41.8781") Double latitude,
-            @Parameter(description = "Longitude", required = true, example = "-87.6298") Double longitude,
-            @Parameter(description = "Radius in miles", required = true, example = "10") Double radiusMiles,
-            @Parameter(description = "Optional category slug to filter", example = "books") String categorySlug
+            @Parameter(description = "Retrieve request that listings near by", required = true)
+            NearbyListingRequest request
     );
 
     // ---------------------------------------------------------------------

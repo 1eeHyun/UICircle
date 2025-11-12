@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public class SearchListingRequest {
 
     private String keyword;
-    private Long categoryId;
+    private String categorySlug;
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private ItemCondition condition;
