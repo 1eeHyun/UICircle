@@ -7,10 +7,10 @@ import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.OfferStatus;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import edu.uic.marketplace.model.user.User;
-import edu.uic.marketplace.repository.listing.PriceOfferRepository;
+import edu.uic.marketplace.repository.transaction.PriceOfferRepository;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
-import edu.uic.marketplace.validator.listing.OfferValidator;
+import edu.uic.marketplace.validator.transaction.PriceOfferValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,27 +24,35 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
     private final AuthValidator authValidator;
     private final ListingValidator listingValidator;
-    private final OfferValidator offerValidator;
+    private final PriceOfferValidator priceOfferValidator;
+
     private final PriceOfferRepository priceOfferRepository;
+
+    // ==================== create offer ====================
 
     @Override
     @Transactional
-    public PriceOfferResponse createOffer(String listingId, String buyerUsername, CreateOfferRequest request) {
+    public PriceOfferResponse createOffer(String listingPublicId, String buyerUsername, CreateOfferRequest request) {
 
-        // 1) validate
-        Listing listing = listingValidator.validateActiveListingByPublicId(listingId);
+        // 1) Validate buyer and listing
         User buyer = authValidator.validateUserByUsername(buyerUsername);
+        Listing listing = listingValidator.validateListingByPublicId(listingPublicId);
 
-        // 2) prevent duplicate pending offer from same buyer for same listing
+        // 2) Prevent buyer from offering on their own listing
+        if (listing.getSeller().getUserId().equals(buyer.getUserId())) {
+            throw new IllegalStateException("You cannot make an offer on your own listing.");
+        }
+
+        // 3) Check if buyer already has a pending offer for this listing
         boolean pendingExists = priceOfferRepository.existsByBuyer_UsernameAndListing_PublicIdAndStatus(
-                buyerUsername, listingId, OfferStatus.PENDING
+                buyerUsername, listingPublicId, OfferStatus.PENDING
         );
 
         if (pendingExists) {
             throw new IllegalStateException("You already have a pending offer for this listing.");
         }
 
-        // 3) create a new offer (timestamps handled by Hibernate)
+        // 4) Create offer
         PriceOffer newOffer = PriceOffer.builder()
                 .listing(listing)
                 .buyer(buyer)
@@ -55,125 +63,237 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
         PriceOffer saved = priceOfferRepository.save(newOffer);
 
-        // 4) TODO: notification
+        // TODO: notification
 
+        // 5) Return response
         return PriceOfferResponse.from(saved);
     }
 
+    // ==================== accept offer (seller) ====================
+
     @Override
     @Transactional
-    public PriceOfferResponse updateOfferStatus(String offerId, String username, UpdateOfferStatusRequest request) {
+    public PriceOfferResponse acceptOffer(String offerPublicId, String sellerUsername, UpdateOfferStatusRequest request) {
 
-        // 1) validate
-        PriceOffer offer = offerValidator.validatePriceOfferByPublicId(offerId);
-        User user = authValidator.validateUserByUsername(username);
-        offerValidator.validateOfferRightSeller(offer.getListing().getSeller(), user);
+        // 1) Validate offer exists
+        PriceOffer offer = priceOfferValidator.validatePriceOfferByPublicId(offerPublicId);
 
-        // 2) change status
-        offer.setStatus(request.getStatus());
-        offer.setMessage(request.getNote());
-        // updatedAt -> @UpdateTimestamp auto
+        // 2) Validate seller
+        User seller = authValidator.validateUserByUsername(sellerUsername);
 
-        // 3) TODO: notification
+        // 3) Ensure seller is the owner of the listing
+        priceOfferValidator.validateOfferRightSeller(offer.getListing().getSeller(), seller);
+
+        // 4) Validate requested status == ACCEPTED
+        if (request.getStatus() != OfferStatus.ACCEPTED) {
+            throw new IllegalArgumentException("Invalid status. Use rejectOffer() for rejection.");
+        }
+
+        // 5) Only PENDING offers can be accepted
+        if (!offer.isPending()) {
+            throw new IllegalStateException("Only pending offers can be accepted.");
+        }
+
+        // 6) Accept the offer
+        offer.accept();  // sets status = ACCEPTED
+        offer.setMessage(request.getNote()); // seller note
+
+        Listing listing = offer.getListing();
+
+        // 7) Auto-reject all other pending offers
+        autoRejectOtherOffers(listing.getPublicId(), offer.getPublicId());
+
+        // TODO: notification
+
+        // 8) Return response
         return PriceOfferResponse.from(offer);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<PriceOffer> findById(String offerId) {
-        return priceOfferRepository.findByPublicId(offerId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PriceOfferResponse> getOffersForListing(String listingId, String sellerUsername) {
-
-        // 1) validate
-        Listing listing = listingValidator.validateListingByPublicId(listingId);
-        User seller = authValidator.validateUserByUsername(sellerUsername);
-        offerValidator.validateOfferRightSeller(listing.getSeller(), seller);
-
-        // 2) fetch & map
-        return priceOfferRepository.findByListing_PublicId(listingId).stream()
-                .map(PriceOfferResponse::from)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PriceOfferResponse> getUserSentOffers(String username) {
-
-        // Retrieve offers that buyer sent
-        authValidator.validateUserByUsername(username);
-        return priceOfferRepository.findByBuyer_Username(username).stream()
-                .map(PriceOfferResponse::from)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PriceOfferResponse> getUserReceivedOffers(String username) {
-
-        // Retrieve offers seller received
-        authValidator.validateUserByUsername(username);
-        return priceOfferRepository.findByListing_Seller_Username(username).stream()
-                .map(PriceOfferResponse::from)
-                .toList();
-    }
+    // ==================== reject offer (seller) ====================
 
     @Override
     @Transactional
-    public void cancelOffer(String offerId, String buyerUsername) {
+    public PriceOfferResponse rejectOffer(String offerPublicId, String sellerUsername, UpdateOfferStatusRequest request) {
 
-        // 1) validate
-        PriceOffer offer = offerValidator.validatePriceOfferByPublicId(offerId);
+        // 1) Validate offer
+        PriceOffer offer = priceOfferValidator.validatePriceOfferByPublicId(offerPublicId);
+
+        // 2) Validate seller
+        User seller = authValidator.validateUserByUsername(sellerUsername);
+
+        // 3) Ensure seller owns the listing
+        priceOfferValidator.validateOfferRightSeller(offer.getListing().getSeller(), seller);
+
+        // 4) Validate requested status == REJECTED
+        if (request.getStatus() != OfferStatus.REJECTED) {
+            throw new IllegalArgumentException("Invalid status. Use acceptOffer() for acceptance.");
+        }
+
+        // 5) Only pending offers can be rejected
+        if (!offer.isPending()) {
+            throw new IllegalStateException("Only pending offers can be rejected.");
+        }
+
+        // 6) Reject offer
+        offer.reject();  // status = REJECTED
+        offer.setMessage(request.getNote());
+
+        // TODO: notification
+
+        return PriceOfferResponse.from(offer);
+    }
+
+    // ==================== cancel offer (buyer) ====================
+
+    @Override
+    @Transactional
+    public void cancelOffer(String offerPublicId, String buyerUsername) {
+
+        // 1) Validate offer
+        PriceOffer offer = priceOfferValidator.validatePriceOfferByPublicId(offerPublicId);
+
+        // 2) Validate buyer
         User buyer = authValidator.validateUserByUsername(buyerUsername);
 
-        // 2) only the buyer can cancel their own pending offer
-        if (!offer.getBuyer().equals(buyer)) {
+        // 3) Only the buyer who created the offer can cancel it
+        if (!offer.getBuyer().getUserId().equals(buyer.getUserId())) {
             throw new SecurityException("Not your offer.");
         }
+
+        // 4) Only pending offers can be canceled
         if (!offer.isPending()) {
             throw new IllegalStateException("Only pending offers can be canceled.");
         }
 
-        offer.setStatus(OfferStatus.REJECTED);
-        offer.setMessage("(canceled by buyer) " + (offer.getMessage() == null ? "" : offer.getMessage()));
+        // 5) Mark as rejected / canceled
+        offer.reject(); // still using REJECTED for canceled offers
+
+        String originalMsg = offer.getMessage() == null ? "" : offer.getMessage();
+        offer.setMessage("(canceled by buyer) " + originalMsg);
+
+        // TODO: notification
     }
+
+    // ==================== listing offers for seller ====================
 
     @Override
     @Transactional(readOnly = true)
-    public boolean hasPendingOffer(String username, String listingId) {
+    public List<PriceOfferResponse> getOffersForListing(String listingPublicId, String sellerUsername) {
+
+        // 1) Validate listing
+        Listing listing = listingValidator.validateListingByPublicId(listingPublicId);
+
+        // 2) Validate seller
+        User seller = authValidator.validateUserByUsername(sellerUsername);
+
+        // 3) Ensure seller owns the listing
+        priceOfferValidator.validateOfferRightSeller(listing.getSeller(), seller);
+
+        // 4) Fetch offers
+        return priceOfferRepository.findByListing_PublicId(listingPublicId).stream()
+                .map(PriceOfferResponse::from)
+                .toList();
+    }
+
+    // ==================== buyer's sent offers ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PriceOfferResponse> getUserSentOffers(String buyerUsername) {
+
+        authValidator.validateUserByUsername(buyerUsername);
+
+        return priceOfferRepository.findByBuyer_Username(buyerUsername).stream()
+                .map(PriceOfferResponse::from)
+                .toList();
+    }
+
+    // ==================== seller's received offers ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PriceOfferResponse> getUserReceivedOffers(String sellerUsername) {
+
+        authValidator.validateUserByUsername(sellerUsername);
+
+        return priceOfferRepository.findByListing_Seller_Username(sellerUsername).stream()
+                .map(PriceOfferResponse::from)
+                .toList();
+    }
+
+    // ==================== single offer detail ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PriceOfferResponse> getOffer(String offerPublicId, String username) {
+
+        User user = authValidator.validateUserByUsername(username);
+
+        Optional<PriceOffer> opt = priceOfferRepository.findByPublicId(offerPublicId);
+        if (opt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        PriceOffer offer = opt.get();
+
+        boolean isBuyer = offer.getBuyer().getUserId().equals(user.getUserId());
+        boolean isSeller = offer.getListing().getSeller().getUserId().equals(user.getUserId());
+
+        if (!isBuyer && !isSeller) {
+            throw new SecurityException("You are not allowed to view this offer.");
+        }
+
+        return Optional.of(PriceOfferResponse.from(offer));
+    }
+
+    // ==================== helper: pending check ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPendingOffer(String buyerUsername, String listingPublicId) {
         return priceOfferRepository.existsByBuyer_UsernameAndListing_PublicIdAndStatus(
-                username, listingId, OfferStatus.PENDING
+                buyerUsername,
+                listingPublicId,
+                OfferStatus.PENDING
         );
     }
 
+    // ==================== latest accepted offer for listing ====================
+
     @Override
     @Transactional(readOnly = true)
-    public Optional<PriceOfferResponse> getAcceptedOffer(String listingId) {
+    public Optional<PriceOfferResponse> getAcceptedOffer(String listingPublicId) {
 
-        List<PriceOffer> accepted = priceOfferRepository.findByListing_PublicIdAndStatus(
-                listingId, OfferStatus.ACCEPTED
-        );
+        List<PriceOffer> acceptedOffers =
+                priceOfferRepository.findByListing_PublicIdAndStatus(
+                        listingPublicId,
+                        OfferStatus.ACCEPTED
+                );
 
-        return accepted.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+        return acceptedOffers.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // latest first
                 .findFirst()
                 .map(PriceOfferResponse::from);
     }
 
+    // ==================== auto reject other pending offers ====================
+
     @Override
     @Transactional
-    public void autoRejectOtherOffers(String listingId, String acceptedOfferId) {
+    public void autoRejectOtherOffers(String listingPublicId, String acceptedOfferPublicId) {
 
-        List<PriceOffer> pending = priceOfferRepository.findByListing_PublicIdAndStatus(
-                listingId, OfferStatus.PENDING
-        );
-        for (PriceOffer po : pending) {
-            if (!po.getPublicId().equals(acceptedOfferId)) {
-                po.reject(); // helper: status = REJECTED
+        // 1) Find all pending offers for this listing
+        List<PriceOffer> pendingOffers = priceOfferRepository
+                .findByListing_PublicIdAndStatus(listingPublicId, OfferStatus.PENDING);
+
+        // 2) Reject all pending offers except the one that was just accepted
+        for (PriceOffer offer : pendingOffers) {
+            if (!offer.getPublicId().equals(acceptedOfferPublicId)) {
+                offer.reject(); // helper: status = REJECTED
             }
         }
+        // @Transactional + dirty checking → auto flush
     }
+
+    // ----------------- helper methods -----------------
 }
