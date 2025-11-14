@@ -81,7 +81,7 @@ public class ListingValidator {
         return listingRepository
                 .findByPublicIdAndStatusAndDeletedAtIsNull(publicId, status)
                 .orElseThrow(() -> new ListingNotFoundException(
-                        "Listing with ID " + publicId + " and status " + status + " not found"));
+                        "Listing not found"));
     }
 
     /**

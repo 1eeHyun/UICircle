@@ -12,7 +12,7 @@ import java.time.Instant;
 @Builder
 public class SavedSearchResponse {
 
-    private Long savedSearchId;
+    private String publicId;
     private String name;
     private String query;
     private String filters;
@@ -20,7 +20,7 @@ public class SavedSearchResponse {
 
     public static SavedSearchResponse from(SavedSearch savedSearch) {
         return SavedSearchResponse.builder()
-                .savedSearchId(savedSearch.getSavedSearchId())
+                .publicId(savedSearch.getPublicId())
                 .name(savedSearch.getName())
                 .query(savedSearch.getQuery())
                 .filters(savedSearch.getFilters())
