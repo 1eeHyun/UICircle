@@ -5,7 +5,7 @@ const LoginPage = () => {
 
     const navigate = useNavigate();
     
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent) => {
         // TODO: add logic to check for user account and log them in 
     e.preventDefault();
 
