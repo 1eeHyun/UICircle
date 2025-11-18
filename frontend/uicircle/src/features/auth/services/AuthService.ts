@@ -1,13 +1,40 @@
-import axios from "axios";
-import { AUTH } from "@/constants/apiRoutes/auth.routes";
+import instance from "@/api/axios";
 
-const login = (form: any) =>
-  axios({ method: AUTH.LOGIN.method, url: AUTH.LOGIN.url, data: form });
+export interface LoginRequest {
+  emailOrUsername: string;
+  password: string;
+}
 
-const signup = (form: { email: string; password: string; }) =>
-  axios({ method: AUTH.SIGNUP.method, url: AUTH.SIGNUP.url, data: form });
+export interface SignupRequest {
+  username: string;
+  email: string;
+  password: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  phoneNumber?: string;
+}
 
-const fetchMe = () =>
-  axios({ method: AUTH.ME.method, url: AUTH.ME.url });
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
+  user: {
+    username: string;
+    email: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+  };
+}
 
-export { login, fetchMe, signup };
+export const login = async (form: LoginRequest) => {
+  const response = await instance.post<{ success: boolean; data: LoginResponse }>("/auth/login", form);
+  return response.data;
+};
+
+export const signup = async (form: SignupRequest) => {
+  const response = await instance.post<{ success: boolean }>("/auth/signup", form);
+  return response.data;
+};
