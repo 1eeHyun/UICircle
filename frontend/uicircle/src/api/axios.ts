@@ -1,5 +1,6 @@
 // src/api/axios.js
 import axios from "axios";
+import { AxiosError } from "axios";
 
 /** Normalize base URL and append /api prefix once. */
 const RAW_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -33,14 +34,9 @@ instance.interceptors.request.use((config) => {
 });
 
 /** Safely extract the pathname for an axios error (handles relative URLs). */
-const getPathname = (error) => {
-  try {
-    const cfg = error.config || {};
-    const url = new URL(cfg.url || "", cfg.baseURL || window.location.origin);
-    return url.pathname; // e.g. "/api/auth/me"
-  } catch {
-    return "";
-  }
+const getPathname = (error: AxiosError) => {
+  const url = error.config?.url || '';
+  return new URL(url, 'http://localhost').pathname;
 };
 
 /** Global 401/403 handling with ignore list (keep full '/api' paths here). */
@@ -74,7 +70,12 @@ instance.interceptors.response.use(
  * Convenience wrapper that USES the configured instance
  * so interceptors/baseURL/headers are applied consistently.
  */
-export const apiRequest = async ({ method, url, data, params }) => {
+export const apiRequest = async ({ method, url, data, params } : {
+  method: string,
+  url: string,
+  data?: unknown,
+  params?: unknown;
+}) => {
   try {
     const res = await instance.request({ method, url, data, params });
     return res.data;

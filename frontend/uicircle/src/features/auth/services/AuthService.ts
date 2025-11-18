@@ -1,13 +1,13 @@
-import axios from "@/api/axios";
-import { AUTH } from "@/constants/apiRoutes/auth";
+import axios from "axios";
+import { AUTH } from "@/constants/apiRoutes/auth.routes";
 
-export const login = (form) =>
+const login = (form: any) =>
   axios({ method: AUTH.LOGIN.method, url: AUTH.LOGIN.url, data: form });
 
-export const signup = (form) =>
+const signup = (form: { email: string; password: string; }) =>
   axios({ method: AUTH.SIGNUP.method, url: AUTH.SIGNUP.url, data: form });
 
-export const fetchMe = () =>
+const fetchMe = () =>
   axios({ method: AUTH.ME.method, url: AUTH.ME.url });
 
 export { login, fetchMe, signup };
