@@ -4,4 +4,6 @@ const AUTH = {
     LOGOUT: { method: "POST", url: "/auth/logout" },
     ME: { method: "GET", url: "/auth/me" },
     REFRESH_TOKEN: { method: "POST", url: "/auth/refresh-token" },
-}
+};
+
+export {AUTH};
