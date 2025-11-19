@@ -1,40 +1,36 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_UPPER=false;NON_KEYWORDS=VALUE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: false
     open-in-view: false
 
   flyway:
     enabled: true
     locations: classpath:db/migration
-
-  data:
-    redis:
-      repositories:
-        enabled: false
+    baseline-on-migrate: true
 
 server:
   port: ${PORT:8080}
 
 jwt:
-  secret: ${JWT_SECRET:local_dev_secret}
+  secret: ${JWT_SECRET}
   access-token-expiration: 3600
   refresh-token-expiration: 604800
 
 cloud:
   aws:
     region:
-      static: ${AWS_REGION:us-east-1}
+      static: ${AWS_REGION}
     s3:
-      bucket: ${S3_BUCKET:uicircle-demo-bucket}
+      bucket: ${S3_BUCKET}
 
 frontend:
   origins: ${FRONT_END_URLS:http://localhost:5173}
