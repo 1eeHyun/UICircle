@@ -34,3 +34,6 @@ cloud:
       static: ${AWS_REGION:us-east-1}
     s3:
       bucket: ${S3_BUCKET:uicircle-demo-bucket}
+
+frontend:
+  origins: ${FRONT_END_URLS:http://localhost:5173}
