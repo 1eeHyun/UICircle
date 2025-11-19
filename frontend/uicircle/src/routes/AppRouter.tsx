@@ -5,6 +5,7 @@ import { HomePage } from "../features/home/pages/HomePage";
 import { CategoryPage } from "../features/listings/pages/CategoryPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
+import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -32,12 +33,20 @@ const AppRouter = createBrowserRouter([
     ),
   },
   {
-  path: "/listing/create",
-  element: (
-  <ProtectedRoute>
-     <CreateListingPage/>
-  </ProtectedRoute>
-  ),
+    path: "/listing/create",
+    element: (
+    <ProtectedRoute>
+      <CreateListingPage/>
+    </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/listings/:listingId",
+    element: (
+    <ProtectedRoute>
+      <ListingDetailPage/>
+    </ProtectedRoute>
+    ),
   },
 ]);
 

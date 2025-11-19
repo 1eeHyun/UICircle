@@ -120,10 +120,8 @@ export const createListing = async (
 ) => {
   const formData = new FormData();
   
-  // Append the request as JSON
   formData.append("request", new Blob([JSON.stringify(request)], { type: "application/json" }));
   
-  // Append images if provided
   if (images && images.length > 0) {
     images.forEach((image) => {
       formData.append("images", image);
@@ -140,6 +138,16 @@ export const createListing = async (
     }
   );
   
+  return response.data.data;
+};
+
+export const getListing = async (listingId: string) => {
+  const response = await instance.get<{ success: boolean; data: ListingResponse }>(
+    `/listings`,
+    {
+      params: { publicId: listingId }
+    }
+  );
   return response.data.data;
 };
 

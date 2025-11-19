@@ -8,7 +8,6 @@ import {
   getAllActiveListings, 
   createListing,
   CategoryResponse, 
-  ListingSummaryResponse,
   CreateListingRequest 
 } from "../services/ListingService";
 

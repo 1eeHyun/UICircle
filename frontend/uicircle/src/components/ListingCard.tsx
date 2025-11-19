@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ListingSummaryResponse } from "../features/listings/services/ListingService";
-
+import { ListingSummaryResponse } from "@/features/listings/services/ListingService";
 interface ListingCardProps {
   listing: ListingSummaryResponse;
 }
@@ -9,7 +8,7 @@ const ListingCard = ({ listing }: ListingCardProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/listing/${listing.publicId}`);
+    navigate(`/listings/${listing.publicId}`);
   };
 
   return (
