@@ -27,6 +27,45 @@ export interface PageResponse<T> {
   number: number;
 }
 
+export interface CreateListingRequest {
+  title: string;
+  description: string;
+  price: number;
+  condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
+  categorySlug: string;
+  latitude: number;
+  longitude: number;
+
+}
+export interface ListingResponse {
+  publicId: string;
+  title: string;
+  description: string;
+  price: number;
+  condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
+  status: string;
+  seller: {
+    username: string;
+  };
+  category: {
+    categorySlug: string;
+    name: string;
+  };
+  latitude: number;
+  longitude: number;
+  isNegotiable: boolean;
+  viewCount: number;
+  favoriteCount: number;
+  isFavorited: boolean;
+  images: Array<{
+    publicId: string;
+    imageUrl: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
 export const getAllCategories = async () => {
   const response = await instance.get<{ success: boolean; data: CategoryResponse[] }>("/categories");
   return response.data.data;
@@ -74,3 +113,33 @@ export const getListingsByCategory = async (
   );
   return response.data.data;
 };
+
+export const createListing = async (
+  request: CreateListingRequest,
+  images?: File[]
+) => {
+  const formData = new FormData();
+  
+  // Append the request as JSON
+  formData.append("request", new Blob([JSON.stringify(request)], { type: "application/json" }));
+  
+  // Append images if provided
+  if (images && images.length > 0) {
+    images.forEach((image) => {
+      formData.append("images", image);
+    });
+  }
+
+  const response = await instance.post<{ success: boolean; data: ListingResponse }>(
+    "/listings",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  
+  return response.data.data;
+};
+

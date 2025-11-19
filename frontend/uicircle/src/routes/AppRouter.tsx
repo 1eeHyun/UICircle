@@ -4,6 +4,7 @@ import { SignUpPage } from "../features/auth/pages/SignUpPage";
 import { HomePage } from "../features/home/pages/HomePage";
 import { CategoryPage } from "../features/listings/pages/CategoryPage";
 import ProtectedRoute from "../components/ProtectedRoute";
+import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -29,6 +30,14 @@ const AppRouter = createBrowserRouter([
         <CategoryPage />
       </ProtectedRoute>
     ),
+  },
+  {
+  path: "/listing/create",
+  element: (
+  <ProtectedRoute>
+     <CreateListingPage/>
+  </ProtectedRoute>
+  ),
   },
 ]);
 
