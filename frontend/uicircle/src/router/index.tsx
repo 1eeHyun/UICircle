@@ -32,7 +32,6 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-<<<<<<< HEAD
   {
     path: "/listing/create",
     element: (
@@ -49,8 +48,6 @@ const AppRouter = createBrowserRouter([
     </ProtectedRoute>
     ),
   },
-=======
->>>>>>> c653aa9 (refactor: moved AppRouter to index.ts)
 ]);
 
 export { AppRouter };
