@@ -4,17 +4,16 @@ import type { LatLngLiteral } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix default marker icon issue in many bundlers (like Vite)
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+// Use specified icons instead of the icons in the library
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-// Override default icon (without this, marker may not show)
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+const MARKER_ICON_PATHS = {
+  iconUrl: "/images/marker-icon.png",
+  iconRetinaUrl: "/images/marker-icon-2x.png",
+  shadowUrl: "/images/marker-shadow.png",
+};
+
+L.Icon.Default.mergeOptions(MARKER_ICON_PATHS);
 
 type LocationPickerProps = {
   value: LatLngLiteral | null;
