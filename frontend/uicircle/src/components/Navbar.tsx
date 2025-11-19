@@ -1,6 +1,6 @@
 // src/components/Navbar.tsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Navbar: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
