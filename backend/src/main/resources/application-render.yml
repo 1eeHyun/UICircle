@@ -33,4 +33,4 @@ cloud:
     region:
       static: ${AWS_REGION:us-east-1}
     s3:
-      bucket: demo-bucket
+      bucket: ${S3_BUCKET:uicircle-demo-bucket}
