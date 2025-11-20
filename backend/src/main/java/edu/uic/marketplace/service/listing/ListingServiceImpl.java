@@ -55,7 +55,7 @@ public class ListingServiceImpl implements ListingService {
         User seller = authValidator.validateUserByUsername(username);
 
         // 2) validate category (must be a leaf)
-        Category category = categoryValidator.validateLeafCategory(request.getSlug());
+        Category category = categoryValidator.validateLeafCategory(request.getCategorySlug());
 
         // 3) build entity (publicId handled by @PrePersist)
         Listing listing = Listing.builder()
