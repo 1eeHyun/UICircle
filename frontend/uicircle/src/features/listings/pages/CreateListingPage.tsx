@@ -318,7 +318,7 @@ const CreateListingPage = () => {
             | "GOOD"
             | "FAIR"
             | "POOR",
-          slug: form.categorySlug,
+          categorySlug: form.categorySlug,
           latitude: form.latitude,
           longitude: form.longitude,
         },
@@ -350,11 +350,11 @@ const CreateListingPage = () => {
     !errors.price &&
     !errors.categorySlug &&
     !errors.condition &&
-    form.title &&
-    form.description &&
+    !!form.title &&
+    !!form.description &&
     form.price > 0 &&
-    form.categorySlug &&
-    form.condition;
+    !!form.categorySlug &&
+    !!form.condition;
 
   const location: LatLngLiteral | null =
     selectedLocation ||

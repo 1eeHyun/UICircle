@@ -33,9 +33,9 @@ const ListingDetailPage = () => {
     fetchData();
   }, [listingId]);
 
-  const handleClick = () => {
-    navigate(`/listings/${listing?.publicId}`);  // Match the route
-  };
+  // const handleClick = () => {
+  //   navigate(`/listings/${listing?.publicId}`);  // Match the route
+  // };
 
   if (loading) {
     return ( 

@@ -1,5 +1,11 @@
 // src/features/listings/types/CreateListingTypes.ts
-import type { CreateListingRequest, CategoryResponse } from "../services/ListingService";
+
+import type React from "react";
+import type { LatLngLiteral } from "leaflet";
+import type {
+  CreateListingRequest,
+  CategoryResponse,
+} from "../services/ListingService";
 
 export interface CreateListingErrors {
   title: string;
@@ -26,19 +32,30 @@ export interface CreateListingFormProps {
   touched: CreateListingTouched;
   loading: boolean;
   isFormValid: boolean;
+
   categories: CategoryResponse[];
   subcategories: CategoryResponse[];
   selectedParent: string;
+
   selectedImages: File[];
   previewUrls: string[];
   successMessage: string;
 
+  location: LatLngLiteral | null;
+  onLocationSelect: (coords: LatLngLiteral) => void;
+
   onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => void;
+
   onBlur: (
-    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => void;
+
   onSubmit: (e: React.FormEvent) => void;
   onParentChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
