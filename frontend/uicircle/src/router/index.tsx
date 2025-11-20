@@ -3,6 +3,7 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { SignUpPage } from "../features/auth/pages/SignUpPage";
 import { HomePage } from "../features/home/pages/HomePage";
 import { CategoryPage } from "../features/listings/pages/CategoryPage";
+import { SearchPage } from "../features/search/pages/SearchPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
@@ -33,6 +34,7 @@ const AppRouter = createBrowserRouter([
     ),
   },
   {
+    
     path: "/listing/create",
     element: (
     <ProtectedRoute>
@@ -47,6 +49,14 @@ const AppRouter = createBrowserRouter([
       <ListingDetailPage/>
     </ProtectedRoute>
     ),
+  },
+  {
+    path: "/search",
+    element: (
+      <ProtectedRoute>
+        <SearchPage />
+      </ProtectedRoute>
+    )
   },
 ]);
 

@@ -45,7 +45,9 @@ const Navbar: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search for anything"
-                className="w-full px-4 py-2 pl-10 rounded-lg border border-border-light bg-surface-light text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                onClick={() => navigate("/search")}
+                className="w-full px-4 py-2 pl-10 rounded-lg border border-border-light bg-surface-light text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary cursor-pointer"
+                readOnly
               />
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
