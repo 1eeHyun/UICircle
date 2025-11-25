@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,12 +42,21 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         User buyer = authValidator.validateUserByUsername(buyerUsername);
         Listing listing = listingValidator.validateListingByPublicId(listingPublicId);
 
-        // 2) Prevent buyer from offering on their own listing
+        // 2) Validate price
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Offer amount must be greater than zero.");
+        }
+
+        if (listing.getPrice() != null && request.getAmount().compareTo(listing.getPrice()) > 0) {
+            throw new IllegalArgumentException("Offer amount cannot exceed listing price.");
+        }
+
+        // 3) Prevent buyer from offering on their own listing
         if (listing.getSeller().getUserId().equals(buyer.getUserId())) {
             throw new IllegalStateException("You cannot make an offer on your own listing.");
         }
 
-        // 3) Check if buyer already has a pending offer for this listing
+        // 4) Check if buyer already has a pending offer for this listing
         boolean pendingExists = priceOfferRepository.existsByBuyer_UsernameAndListing_PublicIdAndStatus(
                 buyerUsername, listingPublicId, OfferStatus.PENDING
         );
@@ -55,7 +65,7 @@ public class PriceOfferServiceImpl implements PriceOfferService {
             throw new IllegalStateException("You already have a pending offer for this listing.");
         }
 
-        // 4) Create offer
+        // 5) Create offer
         PriceOffer newOffer = PriceOffer.builder()
                 .listing(listing)
                 .buyer(buyer)
@@ -66,14 +76,14 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
         PriceOffer saved = priceOfferRepository.save(newOffer);
 
-        // 5) Send notification to seller
+        // 6) Send notification to seller
         notificationService.notifyNewOffer(
                 listing.getSeller().getUsername(),
                 buyer.getUsername(),
                 listing.getPublicId()
         );
 
-        // 6) Return response
+        // 7) Return response
         return PriceOfferResponse.from(saved);
     }
 
