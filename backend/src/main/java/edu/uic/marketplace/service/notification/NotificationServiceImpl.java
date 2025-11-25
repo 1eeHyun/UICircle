@@ -196,6 +196,24 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
+    @Override
+    @Transactional
+    public void notifyOfferCanceled(String sellerUsername, String buyerUsername, String listingPublicId) {
+
+        User seller = authValidator.validateUserByUsername(sellerUsername);
+        User buyer = authValidator.validateUserByUsername(buyerUsername);
+
+        String message = buyer.getUsername() + " canceled their offer on your listing.";
+
+        createNotification(
+                seller.getUsername(),
+                NotificationType.SYSTEM,
+                "listing",
+                listingPublicId,
+                message
+        );
+    }
+
     // Helper methods
 
     /**

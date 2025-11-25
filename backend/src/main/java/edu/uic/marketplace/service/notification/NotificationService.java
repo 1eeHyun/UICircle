@@ -97,6 +97,14 @@ public interface NotificationService {
      * @param listingPublicId Listing ID
      */
     void notifyNewOffer(String sellerUsername, String buyerUsername, String listingPublicId);
+
+    /**
+     * Send notification for price offer
+     * @param sellerUsername Seller user username
+     * @param buyerUsername Buyer user username
+     * @param listingPublicId Listing ID
+     */
+    void notifyOfferCanceled(String sellerUsername, String buyerUsername, String listingPublicId);
     
     /**
      * Send notification for offer status change

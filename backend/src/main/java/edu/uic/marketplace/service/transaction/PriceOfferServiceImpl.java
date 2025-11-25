@@ -111,14 +111,18 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         // 7) Auto-reject all other pending offers
         autoRejectOtherOffers(listing.getPublicId(), offer.getPublicId());
 
-        // TODO: notification
+        // 8) Send notification to buyer
+        notificationService.notifyOfferStatusChange(
+                offer.getBuyer().getUsername(),   // buyerUsername
+                listing.getPublicId(),            // listingPublicId
+                "ACCEPTED"                        // status
+        );
 
-        // 8) Return response
+        // 9) Return response
         return PriceOfferResponse.from(offer);
     }
 
     // ==================== reject offer (seller) ====================
-
     @Override
     @Transactional
     public PriceOfferResponse rejectOffer(String offerPublicId, String sellerUsername, UpdateOfferStatusRequest request) {
@@ -145,8 +149,14 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         // 6) Reject offer
         offer.reject();  // status = REJECTED
         offer.setMessage(request.getNote());
+        Listing listing = offer.getListing();
 
-        // TODO: notification
+        // 7) Send notification to buyer
+        notificationService.notifyOfferStatusChange(
+                offer.getBuyer().getUsername(),   // buyerUsername
+                listing.getPublicId(),            // listingPublicId
+                "REJECTED"                        // status
+        );
 
         return PriceOfferResponse.from(offer);
     }
@@ -179,7 +189,12 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         String originalMsg = offer.getMessage() == null ? "" : offer.getMessage();
         offer.setMessage("(canceled by buyer) " + originalMsg);
 
-        // TODO: notification
+        // 6) Notification
+        notificationService.notifyOfferCanceled(
+                offer.getListing().getSeller().getUsername(),  // seller
+                buyer.getUsername(),                           // buyer
+                offer.getListing().getPublicId()               // listingPublicId
+        );
     }
 
     // ==================== listing offers for seller ====================
