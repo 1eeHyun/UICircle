@@ -14,14 +14,14 @@ public interface NotificationService {
     
     /**
      * Create notification
-     * @param userId User ID to notify
+     * @param username User username to notify
      * @param type Notification type
      * @param entityType Entity type (e.g., "listing", "message")
      * @param entityId Entity ID
      * @param message Notification message
      * @return Created notification response
      */
-    NotificationResponse createNotification(Long userId, NotificationType type, String entityType, Long entityId, String message);
+    NotificationResponse createNotification(String username, NotificationType type, String entityType, String entityId, String message);
     
     /**
      * Get notification by ID
@@ -32,77 +32,77 @@ public interface NotificationService {
     
     /**
      * Get user's notifications
-     * @param userId User ID
+     * @param username User username
      * @param page Page number
      * @param size Page size
      * @return Paginated notification responses
      */
-    PageResponse<NotificationResponse> getUserNotifications(Long userId, Integer page, Integer size);
+    PageResponse<NotificationResponse> getUserNotifications(String username, Integer page, Integer size);
     
     /**
      * Get unread notifications
-     * @param userId User ID
+     * @param username User username
      * @param page Page number
      * @param size Page size
      * @return Paginated unread notification responses
      */
-    PageResponse<NotificationResponse> getUnreadNotifications(Long userId, Integer page, Integer size);
+    PageResponse<NotificationResponse> getUnreadNotifications(String username, Integer page, Integer size);
     
     /**
      * Mark notification as read
      * @param notificationId Notification ID
-     * @param userId User ID
+     * @param username User username
      * @return Updated notification response
      */
-    NotificationResponse markAsRead(Long notificationId, Long userId);
+    NotificationResponse markAsRead(String notificationId, String username);
     
     /**
      * Mark all notifications as read
-     * @param userId User ID
+     * @param username User username
      */
-    void markAllAsRead(Long userId);
+    void markAllAsRead(String username);
     
     /**
      * Delete notification
      * @param notificationId Notification ID
-     * @param userId User ID
+     * @param username User username
      */
-    void deleteNotification(Long notificationId, Long userId);
+    void deleteNotification(String notificationId, String username);
     
     /**
      * Delete all notifications for user
-     * @param userId User ID
+     * @param username User username
      */
-    void deleteAllNotifications(Long userId);
+    void deleteAllNotifications(String username);
     
     /**
      * Get unread notification count
-     * @param userId User ID
+     * @param username User username
      * @return Number of unread notifications
      */
-    Long getUnreadCount(Long userId);
+    Long getUnreadCount(String username);
     
     /**
      * Send notification for new message
-     * @param receiverId Receiver user ID
-     * @param senderId Sender user ID
+     * @param receiverUsername Receiver user username
+     * @param senderUsername Sender user username
      * @param conversationId Conversation ID
      */
-    void notifyNewMessage(Long receiverId, Long senderId, Long conversationId);
+    void notifyNewMessage(String receiverUsername, String senderUsername, String conversationId);
     
     /**
      * Send notification for price offer
-     * @param sellerId Seller user ID
-     * @param buyerId Buyer user ID
-     * @param listingId Listing ID
+     * @param sellerUsername Seller user username
+     * @param buyerUsername Buyer user username
+     * @param listingPublicId Listing ID
      */
-    void notifyNewOffer(Long sellerId, Long buyerId, Long listingId);
+    void notifyNewOffer(String sellerUsername, String buyerUsername, String listingPublicId);
     
     /**
      * Send notification for offer status change
-     * @param buyerId Buyer user ID
-     * @param listingId Listing ID
+     * @param buyerUsername Buyer user username
+     * @param listingPublicId Listing ID
      * @param status Offer status (accepted/rejected)
      */
-    void notifyOfferStatusChange(Long buyerId, Long listingId, String status);
+    void notifyOfferStatusChange(String buyerUsername, String listingPublicId, String status);
 }

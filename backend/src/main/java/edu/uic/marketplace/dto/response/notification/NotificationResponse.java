@@ -19,7 +19,7 @@ public class NotificationResponse {
     private String message;
     private String linkUrl;
     private String entityType;
-    private Long entityId;
+    private String entityId;
     private Boolean isRead;
     private Instant readAt;
     private Instant createdAt;

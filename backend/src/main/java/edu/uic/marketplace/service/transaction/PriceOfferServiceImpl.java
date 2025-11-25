@@ -8,6 +8,7 @@ import edu.uic.marketplace.model.listing.OfferStatus;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.transaction.PriceOfferRepository;
+import edu.uic.marketplace.service.notification.NotificationService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import edu.uic.marketplace.validator.transaction.PriceOfferValidator;
@@ -27,6 +28,8 @@ public class PriceOfferServiceImpl implements PriceOfferService {
     private final PriceOfferValidator priceOfferValidator;
 
     private final PriceOfferRepository priceOfferRepository;
+
+    private final NotificationService notificationService;
 
     // ==================== create offer ====================
 
@@ -63,9 +66,14 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
         PriceOffer saved = priceOfferRepository.save(newOffer);
 
-        // TODO: notification
+        // 5) Send notification to seller
+        notificationService.notifyNewOffer(
+                listing.getSeller().getUsername(),
+                buyer.getUsername(),
+                listing.getPublicId()
+        );
 
-        // 5) Return response
+        // 6) Return response
         return PriceOfferResponse.from(saved);
     }
 
