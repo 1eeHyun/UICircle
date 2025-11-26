@@ -79,6 +79,12 @@ public class Conversation {
     @Column(name = "last_message_at")
     private Instant lastMessageAt;
 
+    @Column(name = "seller_deleted_at")
+    private Instant sellerDeletedAt;
+
+    @Column(name = "buyer_deleted_at")
+    private Instant buyerDeletedAt;
+
     /**
      * Creation timestamp
      */

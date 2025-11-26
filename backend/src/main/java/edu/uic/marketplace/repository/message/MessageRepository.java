@@ -9,48 +9,59 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
-    
-    /**
-     * Find messages by conversation
-     */
-    Page<Message> findByConversation_ConversationId(Long conversationId, Pageable pageable);
-    
-    /**
-     * Find messages by conversation ordered by created date
-     */
-    Page<Message> findByConversation_ConversationIdOrderByCreatedAtDesc(
-            Long conversationId, Pageable pageable);
 
-    Long countByConversation_ConversationId(Long conversationId);
-    
+    /**
+     * Find message by public ID
+     */
+    Optional<Message> findByPublicId(String publicId);
+
+    /**
+     * Find messages by conversation public ID
+     */
+    Page<Message> findByConversation_PublicId(String conversationPublicId, Pageable pageable);
+
+    /**
+     * Find messages by conversation ASC order
+     */
+    Page<Message> findByConversation_PublicIdOrderByCreatedAtAsc(
+            String conversationPublicId,
+            Pageable pageable
+    );
+
+    /**
+     * Count messages in conversation
+     */
+    Long countByConversation_PublicId(String conversationPublicId);
+
     /**
      * Count unread messages for user in conversation
      */
     @Query("""
-           SELECT COUNT(m) FROM Message m 
-           WHERE
-               m.conversation.conversationId = :conversationId AND
-               m.sender.userId != :userId AND
-               m.readAt IS NULL
-           """
-    )
-    Long countUnreadInConversation(Long conversationId, @Param("userId") Long userId);
-    
+           SELECT COUNT(m) FROM Message m
+           WHERE m.conversation.publicId = :conversationPublicId
+             AND m.sender.username <> :username
+             AND m.readAt IS NULL
+           """)
+    Long countUnreadInConversation(@Param("conversationPublicId") String conversationPublicId,
+                                   @Param("username") String username);
+
     /**
      * Count total unread messages for user
      */
     @Query("""
         SELECT COUNT(m) FROM Message m
         WHERE (
-            (m.conversation.buyer.userId = :userId AND m.sender.userId = m.conversation.seller.userId)
+            (m.conversation.buyer.username = :username AND m.sender.username = m.conversation.seller.username)
             OR
-            (m.conversation.seller.userId = :userId AND m.sender.userId = m.conversation.buyer.userId)
+            (m.conversation.seller.username = :username AND m.sender.username = m.conversation.buyer.username)
         )
         AND m.readAt IS NULL
     """)
-    Long countUnreadByUserId(@Param("userId") Long userId);
+    Long countUnreadByUsername(@Param("username") String username);
 
     /**
      * Mark all messages as read in conversation for user
@@ -59,18 +70,25 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("""
            UPDATE Message m
            SET m.readAt = FUNCTION('NOW')
-           WHERE m.conversation.conversationId = :conversationId
-           AND m.sender.userId != :userId
-           AND m.readAt IS NULL
-           """
-    )
-    void markAllAsReadInConversation(@Param("conversationId") Long conversationId,
-                                     @Param("userId") Long userId);
+           WHERE m.conversation.publicId = :conversationPublicId
+             AND m.sender.username <> :username
+             AND m.readAt IS NULL
+           """)
+    void markAllAsReadInConversation(@Param("conversationPublicId") String conversationPublicId,
+                                     @Param("username") String username);
 
     /**
-     * Delete messages by conversation
+     * Delete messages by conversation public ID
      */
-    void deleteByConversation_ConversationId(Long conversationId);
+    void deleteByConversation_PublicId(String conversationPublicId);
 
-
+    @Query("""
+            SELECT m FROM Message m
+            WHERE m.conversation.publicId = :publicId
+            ORDER BY m.createdAt DESC
+          """)
+    Page<Message> findLatestMessages(
+            @Param("publicId") String publicId,
+            Pageable pageable
+    );
 }

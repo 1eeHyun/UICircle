@@ -3,6 +3,7 @@ package edu.uic.marketplace.dto.response.message;
 import edu.uic.marketplace.dto.response.listing.ListingSummaryResponse;
 import edu.uic.marketplace.dto.response.user.UserResponse;
 import edu.uic.marketplace.model.message.Conversation;
+import edu.uic.marketplace.model.user.User;
 import lombok.*;
 
 import java.time.Instant;
@@ -14,7 +15,7 @@ import java.time.Instant;
 @Builder
 public class ConversationResponse {
 
-    private Long conversationId;
+    private String conversationPublicId;
     private ListingSummaryResponse listing;
     private UserResponse otherUser;
     private MessageResponse lastMessage;
@@ -27,7 +28,7 @@ public class ConversationResponse {
                                             MessageResponse lastMessage,
                                             Integer unreadCount) {
         return ConversationResponse.builder()
-                .conversationId(conversation.getConversationId())
+                .conversationPublicId(conversation.getPublicId())
                 .listing(ListingSummaryResponse.from(conversation.getListing()))
                 .otherUser(otherUser)
                 .lastMessage(lastMessage)
@@ -36,4 +37,27 @@ public class ConversationResponse {
                 .createdAt(conversation.getCreatedAt())
                 .build();
     }
+
+    public static ConversationResponse fromForUser(Conversation conversation, User currentUser) {
+
+        // determine other user
+        User other = conversation.getSeller().equals(currentUser)
+                ? conversation.getBuyer()
+                : conversation.getSeller();
+
+        int unread = conversation.getSeller().equals(currentUser)
+                ? conversation.getSellerUnreadCount()
+                : conversation.getBuyerUnreadCount();
+
+        return ConversationResponse.builder()
+                .conversationPublicId(conversation.getPublicId())
+                .listing(ListingSummaryResponse.from(conversation.getListing()))
+                .otherUser(UserResponse.from(other))
+                .lastMessage(null)  // new conversation
+                .unreadCount(unread)
+                .lastMessageAt(conversation.getLastMessageAt())
+                .createdAt(conversation.getCreatedAt())
+                .build();
+    }
+
 }

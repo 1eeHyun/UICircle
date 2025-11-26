@@ -14,69 +14,46 @@ public interface ConversationService {
     
     /**
      * Create new conversation
-     * @param userId User ID (buyer)
+     * @param username Username (buyer)
      * @param request Create conversation request
      * @return Created conversation response
      */
-    ConversationResponse createConversation(Long userId, CreateConversationRequest request);
+    ConversationResponse createConversation(String username, CreateConversationRequest request);
     
     /**
      * Get conversation by ID
-     * @param conversationId Conversation ID
+     * @param conversationPublicId Conversation ID
      * @return Conversation entity
      */
-    Optional<Conversation> findById(Long conversationId);
+    Optional<Conversation> findById(String conversationPublicId, String username);
+
+    ConversationResponse getConversation(String conversationPublicId, String username);
     
     /**
      * Get user's conversations
-     * @param userId User ID
+     * @param username Username
      * @param page Page number
      * @param size Page size
      * @return Paginated conversation responses
      */
-    PageResponse<ConversationResponse> getConversations(Long userId, Integer page, Integer size);
+    PageResponse<ConversationResponse> getConversations(String username, Integer page, Integer size);
     
     /**
      * Get conversation between two users for a listing
-     * @param listingId Listing ID
-     * @param user1Id First user ID
-     * @param user2Id Second user ID
+     * @param listingPublicId Listing ID
+     * @param username1 First username
+     * @param username2 Second username
      * @return Conversation if exists
      */
-    Optional<Conversation> findByListingAndUsers(Long listingId, Long user1Id, Long user2Id);
-    
-    /**
-     * Mark conversation as read by user
-     * @param conversationId Conversation ID
-     * @param userId User ID
-     */
-    void markAsRead(Long conversationId, Long userId);
-    
-    /**
-     * Update last message timestamp
-     * @param conversationId Conversation ID
-     */
-    void updateLastMessageAt(Long conversationId);
-    
-    /**
-     * Increment unread count for receiver
-     * @param conversationId Conversation ID
-     * @param receiverId Receiver user ID
-     */
-    void incrementUnreadCount(Long conversationId, Long receiverId);
-    
+    Optional<Conversation> findByListingAndUsers(String listingPublicId, String username1, String username2);
+
+
     /**
      * Get unread conversation count for user
-     * @param userId User ID
+     * @param username Username
      * @return Number of conversations with unread messages
      */
-    Long getUnreadConversationCount(Long userId);
-    
-    /**
-     * Check if user is participant in conversation
-     * @param conversationId Conversation ID
-     * @param userId User ID
-     * @return true if participant, false otherwise
-     */
-    boolean isParticipant(Long conversationId, Long userId);
+    Long getUnreadConversationCount(String username);
+
+    void leaveConversation(String conversationPublicId, String username);
 }

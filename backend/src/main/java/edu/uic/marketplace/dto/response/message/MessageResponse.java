@@ -13,8 +13,8 @@ import java.time.Instant;
 @Builder
 public class MessageResponse {
 
-    private Long messageId;
-    private Long senderId;
+    private String messagePublicId;
+    private String senderUsername;
     private String body;
     private MessageType messageType;
     private Instant readAt;
@@ -22,8 +22,8 @@ public class MessageResponse {
 
     public static MessageResponse from(Message message) {
         return MessageResponse.builder()
-                .messageId(message.getMessageId())
-                .senderId(message.getSender().getUserId())
+                .messagePublicId(message.getPublicId())
+                .senderUsername(message.getSender().getUsername())
                 .body(message.getBody())
                 .messageType(message.getMessageType())
                 .readAt(message.getReadAt())

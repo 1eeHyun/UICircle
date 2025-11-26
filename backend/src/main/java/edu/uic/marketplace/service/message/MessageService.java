@@ -14,63 +14,63 @@ public interface MessageService {
     
     /**
      * Send message in conversation
-     * @param conversationId Conversation ID
-     * @param senderId Sender user ID
+     * @param conversationPublicId Conversation ID
+     * @param senderUsername Sender user ID
      * @param request Send message request
      * @return Created message response
      */
-    MessageResponse sendMessage(Long conversationId, Long senderId, SendMessageRequest request);
+    MessageResponse sendMessage(String conversationPublicId, String senderUsername, SendMessageRequest request);
     
     /**
      * Get message by ID
-     * @param messageId Message ID
+     * @param messagePublicId Message ID
      * @return Message entity
      */
-    Optional<Message> findById(Long messageId);
+    Optional<Message> findById(String messagePublicId, String username);
     
     /**
      * Get messages in conversation
-     * @param conversationId Conversation ID
-     * @param userId User ID (for authorization)
+     * @param conversationPublicId Conversation ID
+     * @param username Username (for authorization)
      * @param page Page number
      * @param size Page size
      * @return Paginated message responses
      */
-    PageResponse<MessageResponse> getMessages(Long conversationId, Long userId, Integer page, Integer size);
+    PageResponse<MessageResponse> getMessages(String conversationPublicId, String username, Integer page, Integer size);
     
     /**
      * Mark message as read
-     * @param messageId Message ID
-     * @param userId User ID (must be receiver)
+     * @param messagePublicId Message ID
+     * @param username Username (must be receiver)
      */
-    void markAsRead(Long messageId, Long userId);
+    void markAsRead(String messagePublicId, String username);
     
     /**
      * Mark all messages in conversation as read
-     * @param conversationId Conversation ID
-     * @param userId User ID (receiver)
+     * @param conversationPublicId Conversation ID
+     * @param username Username (receiver)
      */
-    void markConversationAsRead(Long conversationId, Long userId);
+    void markConversationAsRead(String conversationPublicId, String username);
     
     /**
      * Delete message (soft delete)
-     * @param messageId Message ID
-     * @param userId User ID (must be sender)
+     * @param messagePublicId Message ID
+     * @param username Username (must be sender)
      */
-    void deleteMessage(Long messageId, Long userId);
+    void deleteMessage(String messagePublicId, String username);
     
     /**
      * Get unread message count for user
-     * @param userId User ID
+     * @param username Username
      * @return Total number of unread messages
      */
-    Long getUnreadMessageCount(Long userId);
+    Long getUnreadMessageCount(String username);
     
     /**
      * Get unread messages in conversation
-     * @param conversationId Conversation ID
-     * @param userId User ID (receiver)
+     * @param conversationPublicId Conversation ID
+     * @param username Username (receiver)
      * @return Number of unread messages
      */
-    Long getUnreadCountInConversation(Long conversationId, Long userId);
+    Long getUnreadCountInConversation(String conversationPublicId, String username);
 }
