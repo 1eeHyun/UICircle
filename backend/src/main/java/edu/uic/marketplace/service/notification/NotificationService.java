@@ -113,4 +113,12 @@ public interface NotificationService {
      * @param status Offer status (accepted/rejected)
      */
     void notifyOfferStatusChange(String buyerUsername, String listingPublicId, String status);
+
+    /**
+     * Send notification for listing favorited
+     * @param sellerUsername Seller user username
+     * @param followerUsername Follower user username
+     * @param listingPublicId Offer status (accepted/rejected)
+     */
+    void notifyListingFavorited(String sellerUsername, String followerUsername, String listingPublicId);
 }

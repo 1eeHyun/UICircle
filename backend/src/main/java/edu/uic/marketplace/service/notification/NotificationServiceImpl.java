@@ -214,6 +214,24 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
+    @Override
+    @Transactional
+    public void notifyListingFavorited(String sellerUsername, String followerUsername, String listingPublicId) {
+
+        User seller = authValidator.validateUserByUsername(sellerUsername);
+        User follower = authValidator.validateUserByUsername(followerUsername);
+
+        String message = follower.getUsername() + " favorited your listing.";
+
+        createNotification(
+                seller.getUsername(),
+                NotificationType.LISTING_FAVORITED,
+                "listing",
+                listingPublicId,
+                message
+        );
+    }
+
     // Helper methods
 
     /**
