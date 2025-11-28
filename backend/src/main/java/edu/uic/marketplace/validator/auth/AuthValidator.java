@@ -33,19 +33,11 @@ public class AuthValidator {
     public User validateLogin(String emailOrUsername, String password) {
 
         String input = (emailOrUsername == null) ? "" : emailOrUsername.trim();
-        boolean isEmail = input.contains("@");
 
-        String key = input.toLowerCase();
-
-        User user = isEmail
-                ? userRepository.findByEmailIgnoreCase(key).orElse(null)
-                : userRepository.findByUsernameIgnoreCase(key).orElse(null);
+        User user = userRepository.findByEmailOrUsernameAndStatus(input, UserStatus.ACTIVE)
+                .orElse(null);
 
         if (user == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new UserNotFoundException("Invalid email/username or password");
-        }
-
-        if (user.getStatus() != UserStatus.ACTIVE) {
             throw new UserNotFoundException("Invalid email/username or password");
         }
 

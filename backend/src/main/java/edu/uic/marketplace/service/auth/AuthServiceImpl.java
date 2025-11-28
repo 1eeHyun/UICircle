@@ -13,6 +13,7 @@ import edu.uic.marketplace.validator.auth.AuthValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -86,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
 
         String input = request.getEmailOrUsername() == null ? "" : request.getEmailOrUsername().trim();
@@ -96,10 +97,10 @@ public class AuthServiceImpl implements AuthService {
         // JWT
         String accessToken = jwtTokenProvider.generateToken(user.getUsername());
         String refreshToken = jwtTokenProvider.generateToken(user.getUsername());
-
         int expiresIn = (int) (jwtTokenProvider.getJwtExpirationInMs() / 1000);
 
-        user.setLastLoginAt(Instant.now());
+        // Update lastLoginAt
+        updateLastLoginAt(user.getUserId());
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -108,6 +109,11 @@ public class AuthServiceImpl implements AuthService {
                 .expiresIn(expiresIn)
                 .user(UserResponse.from(user))
                 .build();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void updateLastLoginAt(Long userId) {
+        userRepository.updateLastLoginAt(userId, Instant.now());
     }
 
     @Override
