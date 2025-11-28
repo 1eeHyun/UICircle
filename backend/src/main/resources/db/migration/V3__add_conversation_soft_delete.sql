@@ -1,3 +1,2 @@
-ALTER TABLE conversations
-    ADD COLUMN IF NOT EXISTS seller_deleted_at TIMESTAMP NULL,
-    ADD COLUMN IF NOT EXISTS buyer_deleted_at TIMESTAMP NULL;
+-- Columns already exist
+SELECT 1;
