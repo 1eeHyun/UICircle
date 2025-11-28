@@ -87,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest request) {
 
         String input = request.getEmailOrUsername() == null ? "" : request.getEmailOrUsername().trim();
