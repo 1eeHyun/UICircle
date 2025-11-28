@@ -6,10 +6,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +29,28 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     Optional<Listing> findByPublicIdAndDeletedAtIsNull(String publicId);
 
     /**
+     * Find listing by public ID with all details (OPTIMIZED - prevents N+1)
+     * Use this for detail views that need seller, category, images
+     */
+    @Query("SELECT DISTINCT l FROM Listing l " +
+            "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.category " +
+            "LEFT JOIN FETCH l.images " +
+            "WHERE l.publicId = :publicId AND l.deletedAt IS NULL")
+    Optional<Listing> findByPublicIdWithDetails(@Param("publicId") String publicId);
+
+    /**
+     * Find active listing by public ID with all details (OPTIMIZED)
+     * Most commonly used for public listing detail views
+     */
+    @Query("SELECT DISTINCT l FROM Listing l " +
+            "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.category " +
+            "LEFT JOIN FETCH l.images " +
+            "WHERE l.publicId = :publicId AND l.status = 'ACTIVE' AND l.deletedAt IS NULL")
+    Optional<Listing> findActiveByPublicIdWithDetails(@Param("publicId") String publicId);
+
+    /**
      * Find listing by public ID with specific status where not deleted
      */
     Optional<Listing> findByPublicIdAndStatusAndDeletedAtIsNull(String publicId, ListingStatus status);
@@ -42,13 +66,49 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     boolean existsByPublicId(String publicId);
 
     // =================================================================
+    // Listing Update Operations - Optimized bulk updates
+    // =================================================================
+
+    /**
+     * Increment view count without loading entity (OPTIMIZED)
+     * Single UPDATE query, no SELECT needed
+     */
+    @Modifying
+    @Query("UPDATE Listing l SET l.viewCount = l.viewCount + 1 WHERE l.publicId = :publicId")
+    void incrementViewCount(@Param("publicId") String publicId);
+
+    /**
+     * Increment view count only if viewer is not the seller (OPTIMIZED)
+     * Conditional update in single query
+     */
+    @Modifying
+    @Query("UPDATE Listing l SET l.viewCount = l.viewCount + 1 " +
+            "WHERE l.publicId = :publicId AND l.seller.userId != :viewerId")
+    int incrementViewCountIfNotSeller(@Param("publicId") String publicId, @Param("viewerId") Long viewerId);
+
+    /**
+     * Update listing status efficiently (OPTIMIZED)
+     * Bulk update without loading entity
+     */
+    @Modifying
+    @Query("UPDATE Listing l SET l.status = :status WHERE l.publicId = :publicId")
+    void updateStatus(@Param("publicId") String publicId, @Param("status") ListingStatus status);
+
+    /**
+     * Soft delete listing efficiently (OPTIMIZED)
+     */
+    @Modifying
+    @Query("UPDATE Listing l SET l.deletedAt = :deletedAt WHERE l.publicId = :publicId")
+    void softDelete(@Param("publicId") String publicId, @Param("deletedAt") Instant deletedAt);
+
+    // =================================================================
     // Seller's Listings - Use seller's publicId
     // =================================================================
 
     /**
      * Find all listings by seller's username where not deleted
      */
-    Page<Listing> findBySeller_PublicIdAndDeletedAtIsNull(String username, Pageable pageable);
+    Page<Listing> findBySeller_PublicIdAndDeletedAtIsNull(String sellerPublicId, Pageable pageable);
 
     /**
      * Find listings by seller's username and status where not deleted
@@ -56,9 +116,21 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     Page<Listing> findBySeller_UsernameAndStatusAndDeletedAtIsNull(String username, ListingStatus status, Pageable pageable);
 
     /**
+     * Find listings by seller's public ID and status where not deleted (OPTIMIZED)
+     */
+    @Query(value = "SELECT DISTINCT l FROM Listing l " +
+            "LEFT JOIN FETCH l.category " +
+            "LEFT JOIN FETCH l.images " +
+            "WHERE l.seller.publicId = :sellerPublicId AND l.status = :status AND l.deletedAt IS NULL",
+            countQuery = "SELECT COUNT(l) FROM Listing l WHERE l.seller.publicId = :sellerPublicId AND l.status = :status AND l.deletedAt IS NULL")
+    Page<Listing> findBySellerWithDetails(@Param("sellerPublicId") String sellerPublicId,
+                                          @Param("status") ListingStatus status,
+                                          Pageable pageable);
+
+    /**
      * Find listings by seller's public ID with status in set where not deleted
      */
-    Page<Listing> findBySeller_PublicIdAndStatusInAndDeletedAtIsNull(String username, Collection<ListingStatus> statuses, Pageable pageable);
+    Page<Listing> findBySeller_PublicIdAndStatusInAndDeletedAtIsNull(String sellerPublicId, Collection<ListingStatus> statuses, Pageable pageable);
 
     /**
      * Count listings by seller's username where not deleted
@@ -81,6 +153,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
 
     /**
      * Find listings by exact status with all related data (OPTIMIZED - no N+1)
+     * Use this for home feed to prevent N+1 queries
      */
     @Query("SELECT DISTINCT l FROM Listing l " +
             "LEFT JOIN FETCH l.category " +
@@ -89,6 +162,10 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             "WHERE l.status = :status AND l.deletedAt IS NULL")
     List<Listing> findByStatusWithDetailsNoPage(@Param("status") ListingStatus status);
 
+    /**
+     * Find listings by status with pagination and all related data (OPTIMIZED)
+     * Prevents N+1 for paginated feeds
+     */
     @Query(value = "SELECT DISTINCT l FROM Listing l " +
             "LEFT JOIN FETCH l.category " +
             "LEFT JOIN FETCH l.seller " +
@@ -113,10 +190,12 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
 
     /**
      * Find listings by category slug and status with all related data (OPTIMIZED)
+     * Prevents N+1 for category pages
      */
     @Query(value = "SELECT DISTINCT l FROM Listing l " +
             "LEFT JOIN FETCH l.category c " +
             "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.images " +
             "WHERE c.slug = :categorySlug AND l.status = :status AND l.deletedAt IS NULL",
             countQuery = "SELECT COUNT(l) FROM Listing l WHERE l.category.slug = :categorySlug AND l.status = :status AND l.deletedAt IS NULL")
     Page<Listing> findByCategoryWithDetails(@Param("categorySlug") String categorySlug,
@@ -147,6 +226,31 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
                                   Pageable pageable);
 
     /**
+     * Search listings by keyword with all details (OPTIMIZED)
+     * Prevents N+1 for search results
+     */
+    @Query(value = """
+           SELECT DISTINCT l FROM Listing l
+           LEFT JOIN FETCH l.category
+           LEFT JOIN FETCH l.seller
+           LEFT JOIN FETCH l.images
+           WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(l.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+             AND l.status = :status
+             AND l.deletedAt IS NULL
+           """,
+            countQuery = """
+           SELECT COUNT(l) FROM Listing l
+           WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(l.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+             AND l.status = :status
+             AND l.deletedAt IS NULL
+           """)
+    Page<Listing> searchByKeywordWithDetails(@Param("keyword") String keyword,
+                                             @Param("status") ListingStatus status,
+                                             Pageable pageable);
+
+    /**
      * Search listings by keyword with status in set, excluding deleted
      */
     @Query("""
@@ -175,6 +279,33 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
                                              @Param("categorySlug") String categorySlug,
                                              @Param("statuses") Collection<ListingStatus> statuses,
                                              Pageable pageable);
+
+    /**
+     * Search listings by keyword and category with all details (OPTIMIZED)
+     */
+    @Query(value = """
+           SELECT DISTINCT l FROM Listing l
+           LEFT JOIN FETCH l.category c
+           LEFT JOIN FETCH l.seller
+           LEFT JOIN FETCH l.images
+           WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(l.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+             AND c.slug = :categorySlug
+             AND l.status IN :statuses
+             AND l.deletedAt IS NULL
+           """,
+            countQuery = """
+           SELECT COUNT(l) FROM Listing l
+           WHERE (LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(l.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+             AND l.category.slug = :categorySlug
+             AND l.status IN :statuses
+             AND l.deletedAt IS NULL
+           """)
+    Page<Listing> searchByKeywordAndCategoryWithDetails(@Param("keyword") String keyword,
+                                                        @Param("categorySlug") String categorySlug,
+                                                        @Param("statuses") Collection<ListingStatus> statuses,
+                                                        Pageable pageable);
 
     // =================================================================
     // Geolocation Search
