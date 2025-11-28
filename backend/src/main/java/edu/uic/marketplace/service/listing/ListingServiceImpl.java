@@ -25,9 +25,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -166,7 +168,7 @@ public class ListingServiceImpl implements ListingService {
         listingValidator.validateSellerOwnership(user, listing.getSeller());
 
         // 2) soft delete
-        listing.softDelete();
+        listingRepository.softDelete(publicId, Instant.now());
     }
 
     @Override
@@ -184,7 +186,7 @@ public class ListingServiceImpl implements ListingService {
         }
 
         // 3) inactivate
-        listing.setStatus(ListingStatus.INACTIVE);
+        listingRepository.updateStatus(publicId, ListingStatus.INACTIVE);
     }
 
     @Override
@@ -200,8 +202,8 @@ public class ListingServiceImpl implements ListingService {
         if (listing.getStatus() != ListingStatus.INACTIVE)
             throw new IllegalStateException("Only INACTIVE listing can be ACTIVE.");
 
-        // 2) reactivate
-        listing.setStatus(ListingStatus.ACTIVE);
+        // 3) reactivate
+        listingRepository.updateStatus(publicId, ListingStatus.ACTIVE);
     }
 
     @Override
@@ -219,26 +221,36 @@ public class ListingServiceImpl implements ListingService {
         if (listing.getStatus() != ListingStatus.ACTIVE)
             throw new IllegalStateException("Only ACTIVE listing can be marked as SOLD.");
 
-        // 2) mark as sold
-        listing.setStatus(ListingStatus.SOLD);
+        // 3) mark as sold
+        listingRepository.updateStatus(publicId, ListingStatus.SOLD);
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ListingResponse getListingByPublicId(String publicId, String username) {
 
-        // 1) validate
+        // 1) Fetch listing with all details
+        Listing listing = listingRepository.findActiveByPublicIdWithDetails(publicId)
+                .orElseThrow(() -> new IllegalArgumentException("Listing not found or not active"));
+
+        // 2) Get user
         User user = authValidator.validateUserByUsername(username);
-        Listing listing = listingValidator.validateActiveListingByPublicId(publicId);
 
-        // 2) if viewer not seller, increase the view count
-        boolean viewerIsSeller = listing.getSeller().getUserId().equals(user.getUserId());
-        if (!viewerIsSeller) incrementViewCount(publicId);
-
-        // 3) get if the user favorites the listing
+        // 3) Check if favorited
         boolean isFavorite = favoriteService.isFavorited(username, publicId);
 
+        // 4) Increment view count asynchronously
+        incrementViewCountIfNotSellerAsync(publicId, user.getUserId());
+
         return ListingResponse.from(listing, isFavorite);
+    }
+
+    /**
+     * Increment view count asynchronously if viewer is not the seller
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void incrementViewCountIfNotSellerAsync(String publicId, Long userId) {
+        listingRepository.incrementViewCountIfNotSeller(publicId, userId);
     }
 
     @Override
@@ -257,10 +269,9 @@ public class ListingServiceImpl implements ListingService {
 
         Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
 
-        // Use optimized query with fetch joins
         Page<Listing> result = listingRepository.findByStatusWithDetails(ListingStatus.ACTIVE, pageable);
 
-        // Batch favorite check - ONE query instead of N queries
+        // Batch favorite check
         List<String> listingIds = result.getContent().stream()
                 .map(Listing::getPublicId)
                 .toList();
@@ -285,7 +296,6 @@ public class ListingServiceImpl implements ListingService {
 
         Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
 
-        // Use optimized query with fetch joins
         Page<Listing> result = listingRepository.findByCategoryWithDetails(
                 categorySlug, ListingStatus.ACTIVE, pageable);
 
@@ -309,8 +319,6 @@ public class ListingServiceImpl implements ListingService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ListingSummaryResponse> getListingsBySeller(String sellerUsername, ListingStatus status, int page, int size) {
-
-
         return null;
     }
 
@@ -331,39 +339,51 @@ public class ListingServiceImpl implements ListingService {
         String sortDir = (request.getSortOrder() != null && request.getSortOrder().equalsIgnoreCase("asc")) ? "ASC" : "DESC";
         Pageable pageable = buildPageable(page, size, sortBy, sortDir);
 
-        Specification<Listing> spec = (root, q, cb) -> cb.and(
-                cb.isNull(root.get("deletedAt")),
-                cb.equal(root.get("status"), request.getStatus())
-        );
+        // when keyword exists to prevent N+1
+        Page<Listing> pageResult;
 
-        // Keyword
         if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
-            String like = "%" + request.getKeyword().trim().toLowerCase() + "%";
-            spec = spec.and((root, q, cb) -> cb.or(
-                    cb.like(cb.lower(root.get("title")), like),
-                    cb.like(cb.lower(root.get("description")), like)
-            ));
-        }
+            if (request.getCategorySlug() != null && !request.getCategorySlug().isBlank()) {
+                pageResult = listingRepository.searchByKeywordAndCategoryWithDetails(
+                        request.getKeyword(),
+                        request.getCategorySlug(),
+                        List.of(request.getStatus()),
+                        pageable
+                );
+            } else {
+                pageResult = listingRepository.searchByKeywordWithDetails(
+                        request.getKeyword(),
+                        request.getStatus(),
+                        pageable
+                );
+            }
+        } else {
+            // Fallback to Specification for complex filters
+            Specification<Listing> spec = (root, q, cb) -> cb.and(
+                    cb.isNull(root.get("deletedAt")),
+                    cb.equal(root.get("status"), request.getStatus())
+            );
 
-        // Category
-        if (request.getCategorySlug() != null && !request.getCategorySlug().isBlank()) {
-            spec = spec.and((root, q, cb) -> cb.equal(root.get("category").get("slug"), request.getCategorySlug()));
-        }
+            // Category
+            if (request.getCategorySlug() != null && !request.getCategorySlug().isBlank()) {
+                spec = spec.and((root, q, cb) -> cb.equal(root.get("category").get("slug"), request.getCategorySlug()));
+            }
 
-        // Condition
-        if (request.getCondition() != null) {
-            spec = spec.and((root, q, cb) -> cb.equal(root.get("condition"), request.getCondition()));
-        }
+            // Condition
+            if (request.getCondition() != null) {
+                spec = spec.and((root, q, cb) -> cb.equal(root.get("condition"), request.getCondition()));
+            }
 
-        // Price
-        if (request.getMinPrice() != null) {
-            spec = spec.and((root, q, cb) -> cb.greaterThanOrEqualTo(root.get("price"), request.getMinPrice()));
-        }
-        if (request.getMaxPrice() != null) {
-            spec = spec.and((root, q, cb) -> cb.lessThanOrEqualTo(root.get("price"), request.getMaxPrice()));
-        }
+            // Price
+            if (request.getMinPrice() != null) {
+                spec = spec.and((root, q, cb) -> cb.greaterThanOrEqualTo(root.get("price"), request.getMinPrice()));
+            }
+            if (request.getMaxPrice() != null) {
+                spec = spec.and((root, q, cb) -> cb.lessThanOrEqualTo(root.get("price"), request.getMaxPrice()));
+            }
 
-        Page<Listing> pageResult = listingRepository.findAll(spec, pageable);
+            pageResult = listingRepository.findAll(spec, pageable);
+        }
 
         // Get username for favorite check (optional - may not be logged in)
         String username = null;
@@ -424,21 +444,18 @@ public class ListingServiceImpl implements ListingService {
     @Override
     @Transactional
     public void incrementViewCount(String publicId) {
-        Listing found = listingValidator.validateActiveListingByPublicId(publicId);
-        found.incrementViewCount(); // viewCount++
+        listingRepository.incrementViewCount(publicId);
     }
 
     @Override
     public Long getListingCountBySeller(String sellerUsername) {
-
         User seller = authValidator.validateUserByUsername(sellerUsername);
-//        listingRepository.findBySeller_UsernameAndStatusAndDeletedAtIsNull(sellerUsername, ListingStatus.ACTIVE);
-        return null;
+        return listingRepository.countBySeller_UsernameAndDeletedAtIsNull(sellerUsername);
     }
 
     @Override
     public Long getListingCountBySellerAndStatus(String sellerPublicId, ListingStatus status) {
-        return null;
+        return listingRepository.countBySeller_PublicIdAndStatusAndDeletedAtIsNull(sellerPublicId, status);
     }
 
     // Helper methods
