@@ -1,7 +1,6 @@
 package edu.uic.marketplace.repository.message;
 
 import edu.uic.marketplace.model.message.Conversation;
-import edu.uic.marketplace.model.message.Message;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -83,9 +82,4 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             ORDER BY c.lastMessageAt DESC
             """)
     Page<Conversation> findVisibleConversations(@Param("userId") Long userId, Pageable pageable);
-
-    Page<Message> findByConversation_PublicIdOrderByCreatedAtDesc(
-            String conversationPublicId,
-            Pageable pageable
-    );
 }

@@ -56,7 +56,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     /**
      * Delete notifications by related entity.
      */
-    void deleteByEntityTypeAndEntityId(String entityType, Long entityId);
+    void deleteByEntityTypeAndEntityId(String entityType, String entityId);
 
 
     /**

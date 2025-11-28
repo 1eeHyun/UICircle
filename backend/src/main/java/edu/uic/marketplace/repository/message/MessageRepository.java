@@ -91,4 +91,12 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             @Param("publicId") String publicId,
             Pageable pageable
     );
+
+    /**
+     * Find messages by conversation DESC order
+     */
+    Page<Message> findByConversation_PublicIdOrderByCreatedAtDesc(
+            String conversationPublicId,
+            Pageable pageable
+    );
 }

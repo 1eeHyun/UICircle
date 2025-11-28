@@ -47,4 +47,12 @@ public interface FavoriteService {
      * @return List of favorited listing IDs
      */
     List<String> getUserFavoriteListingPublicIds(String username);
+
+    /**
+     * Check multiple listings at once (BATCH OPERATION for performance)
+     * @param username User ID
+     * @param listingPublicIds List of listing IDs to check
+     * @return Set of favorited listing IDs
+     */
+    java.util.Set<String> getFavoritedListingIds(String username, List<String> listingPublicIds);
 }

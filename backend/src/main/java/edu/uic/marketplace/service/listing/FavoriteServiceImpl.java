@@ -18,7 +18,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -98,6 +101,25 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     public List<String> getUserFavoriteListingPublicIds(String username) {
-        return null;
+
+        User user = authValidator.validateUserByUsername(username);
+        return favoriteRepository.findByUser(user).stream()
+                .map(fav -> fav.getListing().getPublicId())
+                .toList();
+    }
+
+    @Override
+    public Set<String> getFavoritedListingIds(String username, List<String> listingPublicIds) {
+        if (listingPublicIds == null || listingPublicIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        User user = authValidator.validateUserByUsername(username);
+        List<Favorite> favorites = favoriteRepository.findByUser(user);
+
+        return favorites.stream()
+                .map(fav -> fav.getListing().getPublicId())
+                .filter(listingPublicIds::contains)
+                .collect(Collectors.toSet());
     }
 }
