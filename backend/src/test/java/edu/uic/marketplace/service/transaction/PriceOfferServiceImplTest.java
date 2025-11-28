@@ -8,6 +8,7 @@ import edu.uic.marketplace.model.listing.OfferStatus;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.transaction.PriceOfferRepository;
+import edu.uic.marketplace.service.notification.NotificationService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import edu.uic.marketplace.validator.transaction.PriceOfferValidator;
@@ -15,7 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -23,8 +25,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +44,9 @@ class PriceOfferServiceImplTest {
 
     @Mock
     private PriceOfferRepository priceOfferRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private PriceOfferServiceImpl priceOfferService;
@@ -218,11 +224,19 @@ class PriceOfferServiceImplTest {
 
             assertThat(otherPending1.getStatus()).isEqualTo(OfferStatus.REJECTED);
             assertThat(otherPending2.getStatus()).isEqualTo(OfferStatus.REJECTED);
+
+            // Notification
+            verify(notificationService).notifyOfferStatusChange(
+                    eq(buyer.getUsername()),
+                    eq(listing.getPublicId()),
+                    eq("ACCEPTED")
+            );
         }
 
         @Test
         @DisplayName("throws when request status is not ACCEPTED")
         void acceptOffer_invalidStatus() {
+
             String offerPublicId = "offer-1";
             String sellerUsername = "seller";
 
@@ -248,6 +262,7 @@ class PriceOfferServiceImplTest {
         @Test
         @DisplayName("throws when offer is not pending")
         void acceptOffer_notPending() {
+
             String offerPublicId = "offer-1";
             String sellerUsername = "seller";
 
@@ -279,6 +294,7 @@ class PriceOfferServiceImplTest {
         @Test
         @DisplayName("rejects a pending offer by seller")
         void rejectOffer_success() {
+
             String offerPublicId = "offer-1";
             String sellerUsername = "seller";
             User seller = createUser(1L, sellerUsername);
@@ -301,11 +317,19 @@ class PriceOfferServiceImplTest {
             assertThat(response.getStatus()).isEqualTo(OfferStatus.REJECTED);
             assertThat(offer.getStatus()).isEqualTo(OfferStatus.REJECTED);
             assertThat(offer.getMessage()).isEqualTo("Too low");
+
+            // Notification
+            verify(notificationService).notifyOfferStatusChange(
+                    eq(buyer.getUsername()),
+                    eq(listing.getPublicId()),
+                    eq("REJECTED")
+            );
         }
 
         @Test
         @DisplayName("throws when request status is not REJECTED")
         void rejectOffer_invalidStatus() {
+
             String offerPublicId = "offer-1";
             String sellerUsername = "seller";
             User seller = createUser(1L, sellerUsername);
@@ -329,6 +353,7 @@ class PriceOfferServiceImplTest {
         @Test
         @DisplayName("throws when offer is not pending")
         void rejectOffer_notPending() {
+
             String offerPublicId = "offer-1";
             String sellerUsername = "seller";
             User seller = createUser(1L, sellerUsername);
@@ -357,8 +382,9 @@ class PriceOfferServiceImplTest {
     class CancelOfferTests {
 
         @Test
-        @DisplayName("cancels pending offer by buyer")
+        @DisplayName("cancels pending offer by buyer and notifies seller")
         void cancelOffer_success() {
+
             String offerPublicId = "offer-1";
             String buyerUsername = "buyer";
             User buyer = createUser(2L, buyerUsername);
@@ -378,11 +404,19 @@ class PriceOfferServiceImplTest {
             // then
             assertThat(offer.getStatus()).isEqualTo(OfferStatus.REJECTED);
             assertThat(offer.getMessage()).contains("(canceled by buyer)");
+
+            // Notification
+            verify(notificationService).notifyOfferCanceled(
+                    eq(seller.getUsername()),       // sellerUsername
+                    eq(buyer.getUsername()),        // buyerUsername
+                    eq(listing.getPublicId())       // listingPublicId
+            );
         }
 
         @Test
         @DisplayName("throws when someone else tries to cancel the offer")
         void cancelOffer_notOwner() {
+
             String offerPublicId = "offer-1";
             User buyer = createUser(2L, "buyer");
             User attacker = createUser(3L, "attacker");

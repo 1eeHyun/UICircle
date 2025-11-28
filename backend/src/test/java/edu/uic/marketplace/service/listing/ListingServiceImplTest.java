@@ -86,7 +86,7 @@ class ListingServiceImplTest {
                 .description("Nice book for sale")
                 .price(new BigDecimal("12.34"))
                 .condition(ItemCondition.GOOD)
-                .slug("books")
+                .categorySlug("books")
                 .latitude(41.1)
                 .longitude(-87.6)
                 .isNegotiable(true)
@@ -130,7 +130,7 @@ class ListingServiceImplTest {
                 .description("Nice book for sale")
                 .price(new BigDecimal("12.34"))
                 .condition(ItemCondition.GOOD)
-                .slug("books")
+                .categorySlug("books")
                 .build();
 
         given(authValidator.validateUserByUsername(username)).willReturn(seller);
@@ -157,7 +157,7 @@ class ListingServiceImplTest {
 
         CreateListingRequest req = CreateListingRequest.builder()
                 .title("Book").description("D").price(new BigDecimal("1"))
-                .condition(ItemCondition.GOOD).slug("books").build();
+                .condition(ItemCondition.GOOD).categorySlug("books").build();
 
         List<MultipartFile> images = IntStream.range(0, 11)
                 .mapToObj(i -> new MockMultipartFile(
@@ -189,7 +189,7 @@ class ListingServiceImplTest {
 
         CreateListingRequest req = CreateListingRequest.builder()
                 .title("Book").description("Nice book").price(new BigDecimal("10"))
-                .condition(ItemCondition.GOOD).slug("books").latitude(1.0).longitude(2.0)
+                .condition(ItemCondition.GOOD).categorySlug("books").latitude(1.0).longitude(2.0)
                 .build();
 
         MultipartFile ok = new MockMultipartFile("images", "a.jpg", "image/jpeg", new byte[]{1});

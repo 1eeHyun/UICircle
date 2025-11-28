@@ -256,11 +256,20 @@ public class ListingServiceImpl implements ListingService {
     public PageResponse<ListingSummaryResponse> getAllActiveListings(String username, int page, int size, String sortBy, String sortDirection) {
 
         Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
-        Page<Listing> result = listingRepository.findByStatusAndDeletedAtIsNull(ListingStatus.ACTIVE, pageable);
+
+        // Use optimized query with fetch joins
+        Page<Listing> result = listingRepository.findByStatusWithDetails(ListingStatus.ACTIVE, pageable);
+
+        // Batch favorite check - ONE query instead of N queries
+        List<String> listingIds = result.getContent().stream()
+                .map(Listing::getPublicId)
+                .toList();
+
+        java.util.Set<String> favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
 
         List<ListingSummaryResponse> content = result.getContent().stream()
                 .map(listing -> {
-                    boolean isFavorite = favoriteService.isFavorited(username, listing.getPublicId());
+                    boolean isFavorite = favoritedIds.contains(listing.getPublicId());
                     return ListingSummaryResponse.from(listing, isFavorite);
                 })
                 .toList();
@@ -276,12 +285,20 @@ public class ListingServiceImpl implements ListingService {
 
         Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
 
-        Page<Listing> result = listingRepository.findByCategory_SlugAndStatusAndDeletedAtIsNull(
+        // Use optimized query with fetch joins
+        Page<Listing> result = listingRepository.findByCategoryWithDetails(
                 categorySlug, ListingStatus.ACTIVE, pageable);
+
+        // Batch favorite check
+        List<String> listingIds = result.getContent().stream()
+                .map(Listing::getPublicId)
+                .toList();
+
+        java.util.Set<String> favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
 
         List<ListingSummaryResponse> content = result.getContent().stream()
                 .map(listing -> {
-                    boolean isFavorite = favoriteService.isFavorited(username, listing.getPublicId());
+                    boolean isFavorite = favoritedIds.contains(listing.getPublicId());
                     return ListingSummaryResponse.from(listing, isFavorite);
                 })
                 .toList();
@@ -348,8 +365,26 @@ public class ListingServiceImpl implements ListingService {
 
         Page<Listing> pageResult = listingRepository.findAll(spec, pageable);
 
+        // Get username for favorite check (optional - may not be logged in)
+        String username = null;
+        try {
+            username = authValidator.extractUsername();
+        } catch (Exception e) {
+            // Not logged in - skip favorite check
+        }
+
+        // Batch favorite check if user is logged in
+        java.util.Set<String> favoritedIds = java.util.Collections.emptySet();
+        if (username != null) {
+            List<String> listingIds = pageResult.getContent().stream()
+                    .map(Listing::getPublicId)
+                    .toList();
+            favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
+        }
+
+        final java.util.Set<String> finalFavoritedIds = favoritedIds;
         List<ListingSummaryResponse> content = pageResult.getContent().stream()
-                .map(l -> ListingSummaryResponse.from(l, false))
+                .map(l -> ListingSummaryResponse.from(l, finalFavoritedIds.contains(l.getPublicId())))
                 .toList();
 
         return PageMapper.toPageResponse(pageResult, content);

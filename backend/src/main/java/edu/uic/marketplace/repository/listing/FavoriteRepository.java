@@ -37,4 +37,9 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Favorite.Fav
     void deleteByListing_ListingId(Long listingId);
 
     void deleteByUser_Username(String username);
+
+    /**
+     * Find all favorites by user (for batch operations)
+     */
+    List<Favorite> findByUser(User user);
 }

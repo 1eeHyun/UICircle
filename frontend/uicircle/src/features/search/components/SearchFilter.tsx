@@ -25,13 +25,11 @@ const SORT_OPTIONS = [
 const SearchFilter = ({ filters, onFiltersChange, onSearch }: SearchFilterProps) => {
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  // const [allCategories, setAllCategories] = useState<CategoryResponse[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const cats = await getAllCategories();
-        // setAllCategories(cats);
         // Flatten categories and subcategories for dropdown
         const flattened: CategoryResponse[] = [];
         const flatten = (cats: CategoryResponse[]) => {

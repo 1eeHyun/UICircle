@@ -80,6 +80,23 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     Page<Listing> findByStatusAndDeletedAtIsNull(ListingStatus status, Pageable pageable);
 
     /**
+     * Find listings by exact status with all related data (OPTIMIZED - no N+1)
+     */
+    @Query("SELECT DISTINCT l FROM Listing l " +
+            "LEFT JOIN FETCH l.category " +
+            "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.images " +
+            "WHERE l.status = :status AND l.deletedAt IS NULL")
+    List<Listing> findByStatusWithDetailsNoPage(@Param("status") ListingStatus status);
+
+    @Query(value = "SELECT DISTINCT l FROM Listing l " +
+            "LEFT JOIN FETCH l.category " +
+            "LEFT JOIN FETCH l.seller " +
+            "WHERE l.status = :status AND l.deletedAt IS NULL",
+            countQuery = "SELECT COUNT(l) FROM Listing l WHERE l.status = :status AND l.deletedAt IS NULL")
+    Page<Listing> findByStatusWithDetails(@Param("status") ListingStatus status, Pageable pageable);
+
+    /**
      * Find listings by status in set where not deleted (flexible public feed)
      */
     Page<Listing> findByStatusInAndDeletedAtIsNull(Collection<ListingStatus> statuses, Pageable pageable);
@@ -93,6 +110,18 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Find listings by category slug and status where not deleted
      */
     Page<Listing> findByCategory_SlugAndStatusAndDeletedAtIsNull(String categorySlug, ListingStatus status, Pageable pageable);
+
+    /**
+     * Find listings by category slug and status with all related data (OPTIMIZED)
+     */
+    @Query(value = "SELECT DISTINCT l FROM Listing l " +
+            "LEFT JOIN FETCH l.category c " +
+            "LEFT JOIN FETCH l.seller " +
+            "WHERE c.slug = :categorySlug AND l.status = :status AND l.deletedAt IS NULL",
+            countQuery = "SELECT COUNT(l) FROM Listing l WHERE l.category.slug = :categorySlug AND l.status = :status AND l.deletedAt IS NULL")
+    Page<Listing> findByCategoryWithDetails(@Param("categorySlug") String categorySlug,
+                                            @Param("status") ListingStatus status,
+                                            Pageable pageable);
 
     /**
      * Find listings by category slug and status in set where not deleted

@@ -75,7 +75,7 @@ public class Notification {
      * Related entity ID
      */
     @Column(name = "entity_id")
-    private Long entityId;
+    private String entityId;
 
     /**
      * Read timestamp - null means unread

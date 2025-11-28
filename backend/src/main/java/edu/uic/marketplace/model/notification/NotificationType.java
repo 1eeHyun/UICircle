@@ -8,6 +8,7 @@ public enum NotificationType {
     LISTING_SOLD("Listing Sold"),
     NEW_REVIEW("New Review"),
     PRICE_CHANGE("Price Change"),
+    LISTING_FAVORITED("Listing favorite"),
     SYSTEM("System Notification");
 
     private final String description;

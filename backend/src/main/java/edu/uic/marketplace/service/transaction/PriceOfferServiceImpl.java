@@ -8,6 +8,7 @@ import edu.uic.marketplace.model.listing.OfferStatus;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.transaction.PriceOfferRepository;
+import edu.uic.marketplace.service.notification.NotificationService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import edu.uic.marketplace.validator.transaction.PriceOfferValidator;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +30,8 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
     private final PriceOfferRepository priceOfferRepository;
 
+    private final NotificationService notificationService;
+
     // ==================== create offer ====================
 
     @Override
@@ -38,12 +42,21 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         User buyer = authValidator.validateUserByUsername(buyerUsername);
         Listing listing = listingValidator.validateListingByPublicId(listingPublicId);
 
-        // 2) Prevent buyer from offering on their own listing
+        // 2) Validate price
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Offer amount must be greater than zero.");
+        }
+
+        if (listing.getPrice() != null && request.getAmount().compareTo(listing.getPrice()) > 0) {
+            throw new IllegalArgumentException("Offer amount cannot exceed listing price.");
+        }
+
+        // 3) Prevent buyer from offering on their own listing
         if (listing.getSeller().getUserId().equals(buyer.getUserId())) {
             throw new IllegalStateException("You cannot make an offer on your own listing.");
         }
 
-        // 3) Check if buyer already has a pending offer for this listing
+        // 4) Check if buyer already has a pending offer for this listing
         boolean pendingExists = priceOfferRepository.existsByBuyer_UsernameAndListing_PublicIdAndStatus(
                 buyerUsername, listingPublicId, OfferStatus.PENDING
         );
@@ -52,7 +65,7 @@ public class PriceOfferServiceImpl implements PriceOfferService {
             throw new IllegalStateException("You already have a pending offer for this listing.");
         }
 
-        // 4) Create offer
+        // 5) Create offer
         PriceOffer newOffer = PriceOffer.builder()
                 .listing(listing)
                 .buyer(buyer)
@@ -63,9 +76,14 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
         PriceOffer saved = priceOfferRepository.save(newOffer);
 
-        // TODO: notification
+        // 6) Send notification to seller
+        notificationService.notifyNewOffer(
+                listing.getSeller().getUsername(),
+                buyer.getUsername(),
+                listing.getPublicId()
+        );
 
-        // 5) Return response
+        // 7) Return response
         return PriceOfferResponse.from(saved);
     }
 
@@ -103,14 +121,18 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         // 7) Auto-reject all other pending offers
         autoRejectOtherOffers(listing.getPublicId(), offer.getPublicId());
 
-        // TODO: notification
+        // 8) Send notification to buyer
+        notificationService.notifyOfferStatusChange(
+                offer.getBuyer().getUsername(),   // buyerUsername
+                listing.getPublicId(),            // listingPublicId
+                "ACCEPTED"                        // status
+        );
 
-        // 8) Return response
+        // 9) Return response
         return PriceOfferResponse.from(offer);
     }
 
     // ==================== reject offer (seller) ====================
-
     @Override
     @Transactional
     public PriceOfferResponse rejectOffer(String offerPublicId, String sellerUsername, UpdateOfferStatusRequest request) {
@@ -137,8 +159,14 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         // 6) Reject offer
         offer.reject();  // status = REJECTED
         offer.setMessage(request.getNote());
+        Listing listing = offer.getListing();
 
-        // TODO: notification
+        // 7) Send notification to buyer
+        notificationService.notifyOfferStatusChange(
+                offer.getBuyer().getUsername(),   // buyerUsername
+                listing.getPublicId(),            // listingPublicId
+                "REJECTED"                        // status
+        );
 
         return PriceOfferResponse.from(offer);
     }
@@ -171,7 +199,12 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         String originalMsg = offer.getMessage() == null ? "" : offer.getMessage();
         offer.setMessage("(canceled by buyer) " + originalMsg);
 
-        // TODO: notification
+        // 6) Notification
+        notificationService.notifyOfferCanceled(
+                offer.getListing().getSeller().getUsername(),  // seller
+                buyer.getUsername(),                           // buyer
+                offer.getListing().getPublicId()               // listingPublicId
+        );
     }
 
     // ==================== listing offers for seller ====================
