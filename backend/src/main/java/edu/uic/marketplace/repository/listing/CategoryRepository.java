@@ -36,7 +36,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findByParent_Slug(String parentSlug);
 
     /**
-     * Find all root categories with children efficiently using batch fetch
+     * Find all root categories (optimized - no children fetch)
      */
     @Query("SELECT c FROM Category c WHERE c.parent IS NULL ORDER BY c.name")
     List<Category> findRootCategories();
