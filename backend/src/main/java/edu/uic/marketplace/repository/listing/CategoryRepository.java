@@ -3,7 +3,6 @@ package edu.uic.marketplace.repository.listing;
 import edu.uic.marketplace.model.listing.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -37,16 +36,11 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findByParent_Slug(String parentSlug);
 
     /**
-     * Find category with its children by slug
+     * Find all root categories with children efficiently using batch fetch
      */
-    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.children WHERE c.slug = :slug")
-    Optional<Category> findBySlugWithChildren(@Param("slug") String slug);
+    @Query("SELECT c FROM Category c WHERE c.parent IS NULL ORDER BY c.name")
+    List<Category> findRootCategories();
 
-    /**
-     * Find category with its parent by slug
-     */
-    @Query("SELECT c FROM Category c LEFT JOIN FETCH c.parent WHERE c.slug = :slug")
-    Optional<Category> findBySlugWithParent(@Param("slug") String slug);
 
     /**
      * Find all categories with their children (for category tree)

@@ -8,6 +8,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+      default_batch_fetch_size: 20
     database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: false
     open-in-view: false

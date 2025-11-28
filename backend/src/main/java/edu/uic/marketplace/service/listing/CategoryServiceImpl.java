@@ -22,12 +22,11 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
 
-        // Load all and filter roots to avoid duplicate children at top level
-        List<Category> allWithChildren = categoryRepository.findAllWithChildren();
+        // Load root categories
+        List<Category> roots = categoryRepository.findRootCategories();
 
-        return allWithChildren.stream()
-                .filter(Category::isRootCategory)
-                .sorted(Comparator.comparing(Category::getName, String.CASE_INSENSITIVE_ORDER))
+        // Automatically load children with batch
+        return roots.stream()
                 .map(CategoryResponse::from)
                 .toList();
     }
