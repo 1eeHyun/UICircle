@@ -53,7 +53,7 @@ public class Category {
     /**
      * Subcategories
      */
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Category> children = new ArrayList<>();
 
