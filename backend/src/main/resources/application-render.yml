@@ -37,3 +37,11 @@ cloud:
 
 frontend:
   origins: ${FRONT_END_URLS:http://localhost:5173}
+
+sendgrid:
+  api-key: ${SENDGRID_API_KEY}
+
+app:
+  mail:
+    from-email: ${APP_MAIL_FROM:no-reply@uicircle.com}
+    frontend-url: ${FRONTEND_URL:https://localhost:5173}

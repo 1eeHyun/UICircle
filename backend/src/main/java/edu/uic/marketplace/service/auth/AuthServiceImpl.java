@@ -6,27 +6,36 @@ import edu.uic.marketplace.dto.response.auth.TokenResponse;
 import edu.uic.marketplace.dto.response.user.UserResponse;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.model.user.UserStatus;
+import edu.uic.marketplace.model.verification.EmailVerification;
+import edu.uic.marketplace.model.verification.PasswordReset;
 import edu.uic.marketplace.repository.user.UserRepository;
 import edu.uic.marketplace.repository.verification.EmailVerificationRepository;
+import edu.uic.marketplace.repository.verification.PasswordResetRepository;
 import edu.uic.marketplace.security.JwtTokenProvider;
+import edu.uic.marketplace.service.email.EmailService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
+    private final PasswordResetRepository passwordResetRepository;
 
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
 
     private final AuthValidator authValidator;
 
@@ -34,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void signup(SignupRequest request) {
 
-        // 1) validate email
+        // 1) Validate email and username
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already in use");
         }
@@ -43,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Username already in use");
         }
 
-        // 2) create a new user
+        // 2) Create new user
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -53,37 +62,87 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(request.getLastName())
                 .phoneNumber(request.getPhoneNumber())
                 .role(request.getRole())
-                .status(UserStatus.ACTIVE)
+                .status(UserStatus.PENDING)
                 .createdAt(Instant.now())
                 .emailVerified(false)
                 .build();
 
         userRepository.save(user);
 
-        // TODO: send verificaton code to the email, future feature
+        // 3) Create verification token
+        String token = UUID.randomUUID().toString();
+        EmailVerification verification = EmailVerification.builder()
+                .user(user)
+                .token(token)
+                .expiresAt(Instant.now().plusSeconds(24 * 3600)) // 24 hours
+                .build();
 
-        // 3) send a verification code
-//        EmailVerification verification = EmailVerification.builder()
-//                .user(user)
-//                .token(UUID.randomUUID().toString())
-//                .expiresAt(Instant.now().plusSeconds(24 * 3600)) // 24hrs
-//                .build();
-//
-//        emailVerificationRepository.save(verification);
+        emailVerificationRepository.save(verification);
 
-//        String verifyLink = "https://your-frontend.com/verify?token=" + verification.getToken();
-//        mailService.sendVerificationEmail(user.getEmail(), verifyLink);
+        // 4) Send verification email
+        try {
+            emailService.sendVerificationEmail(user.getEmail(), token);
+        } catch (Exception e) {
+            // Log error but don't fail signup
+            System.err.println("Failed to send verification email: " + e.getMessage());
+        }
     }
 
     @Override
+    @Transactional
     public void verifyEmail(String token) {
-        // TODO: future feature
+
+        // 1) Find verification by token
+        EmailVerification verification = emailVerificationRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid verification token"));
+
+        // 2) Validate using helper methods
+        if (verification.isExpired()) {
+            throw new IllegalArgumentException("Verification token has expired");
+        }
+
+        if (verification.isVerified()) {
+            throw new IllegalArgumentException("Email already verified");
+        }
+
+        // 3) Mark user email as verified and activate account
+        User user = verification.getUser();
+        userRepository.updateEmailVerified(user.getUserId(), true);
+        userRepository.updateStatus(user.getUserId(), UserStatus.ACTIVE);
+
+        // 4) Mark verification as complete
+        verification.verify();
+        emailVerificationRepository.save(verification);
     }
 
     @Override
+    @Transactional
     public void resendVerificationEmail(String email) {
 
-        // TODO: future feature
+        // 1) Find user by email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // 2) Check if already verified
+        if (user.getEmailVerified()) {
+            throw new IllegalArgumentException("Email already verified");
+        }
+
+        // 3) Invalidate old verifications
+        emailVerificationRepository.deleteByUser_Username(user.getUsername());
+
+        // 4) Create new verification token
+        String token = UUID.randomUUID().toString();
+        EmailVerification verification = EmailVerification.builder()
+                .user(user)
+                .token(token)
+                .expiresAt(Instant.now().plusSeconds(24 * 3600))
+                .build();
+
+        emailVerificationRepository.save(verification);
+
+        // 5) Send email
+        emailService.sendVerificationEmail(user.getEmail(), token);
     }
 
     @Override
@@ -118,40 +177,97 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(Long userId, String token) {
-
+        // TODO: Implement token blacklist if needed
     }
 
     @Override
     public TokenResponse refreshToken(String refreshToken) {
-
-        // TODO: future feature
+        // TODO: Implement refresh token logic
         return null;
     }
 
     @Override
+    @Transactional
     public void requestPasswordReset(PasswordResetCodeRequest request) {
 
-        // TODO: future feature
+        // 1) Find user by email
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        // 2) Invalidate old password reset requests
+        passwordResetRepository.deleteByUser_UserId(user.getUserId());
+
+        // 3) Create new password reset token
+        String token = UUID.randomUUID().toString();
+        PasswordReset passwordReset = PasswordReset.builder()
+                .user(user)
+                .token(token)
+                .expiresAt(Instant.now().plusSeconds(3600)) // 1 hour
+                .build();
+
+        passwordResetRepository.save(passwordReset);
+
+        // 4) Send password reset email
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), token);
+        } catch (Exception e) {
+            // Log error
+            log.error("Failed to send verification email", e);
+            throw new RuntimeException("Failed to send password reset email");
+        }
     }
 
     @Override
+    @Transactional
     public void resetPassword(PasswordResetRequest request) {
 
-        // TODO: future feature
+        // 1) Find password reset by token
+        PasswordReset passwordReset = passwordResetRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid password reset token"));
 
+        // 2) Validate using helper methods
+        if (passwordReset.isExpired()) {
+            throw new IllegalArgumentException("Password reset token has expired");
+        }
+
+        if (passwordReset.isUsed()) {
+            throw new IllegalArgumentException("Password reset token already used");
+        }
+
+        // 3) Update password
+        User user = passwordReset.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // 4) Mark token as used
+        passwordReset.markAsUsed();
+        passwordResetRepository.save(passwordReset);
     }
 
     @Override
+    @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
 
-        // TODO: future feature
+        // 1) Find user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // 2) Verify old password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid old password");
+        }
+
+        // 3) Update password
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     @Override
     public Long validateToken(String token) {
 
-        // TODO: future feature
-        return null;
+        String username = jwtTokenProvider.getUsernameFromJWT(token);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
+        return user.getUserId();
     }
 }
