@@ -1,6 +1,5 @@
-// src/api/axios.js
-import axios from "axios";
-import { AxiosError } from "axios";
+// src/api/axios.ts
+import axios, { AxiosError } from "axios";
 
 /** Normalize base URL and append /api prefix once. */
 const RAW_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -25,7 +24,7 @@ instance.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
- if (config.data instanceof FormData) {
+  if (config.data instanceof FormData) {
     if (config.headers && "Content-Type" in config.headers) {
       delete config.headers["Content-Type"];
     }
@@ -35,8 +34,9 @@ instance.interceptors.request.use((config) => {
 
 /** Safely extract the pathname for an axios error (handles relative URLs). */
 const getPathname = (error: AxiosError) => {
-  const url = error.config?.url || '';
-  return new URL(url, 'http://localhost').pathname;
+  const url = error.config?.url || "";
+  const base = instance.defaults.baseURL || "http://localhost";
+  return new URL(url, base).pathname;
 };
 
 /** Global 401/403 handling with ignore list (keep full '/api' paths here). */
@@ -48,12 +48,14 @@ instance.interceptors.response.use(
     const isUnauthorized = status === 401;
     const isOnLoginPage = currentPath === "/";
 
-    // Add any endpoints you want to ignore 401 handling for:
-    const ignore401Paths = ["/api/auth/me"];
+    const ignore401Prefixes = [
+      "/api/auth",  // /api/auth/me, /api/auth/verify-email, /api/auth/...
+      "/auth",    
+    ];
 
     const pathname = getPathname(error);
-    const shouldIgnore = ignore401Paths.some(
-      (p) => pathname === p || pathname.startsWith(p + "/")
+    const shouldIgnore = ignore401Prefixes.some((p) =>
+      pathname === p || pathname.startsWith(p + "/")
     );
 
     if (isUnauthorized && !shouldIgnore && !isOnLoginPage) {
@@ -66,16 +68,14 @@ instance.interceptors.response.use(
   }
 );
 
-/**
- * Convenience wrapper that USES the configured instance
- * so interceptors/baseURL/headers are applied consistently.
- */
-export const apiRequest = async ({ method, url, data, params } : {
-  method: string,
-  url: string,
-  data?: unknown,
+type ApiRequestArgs = {
+  method: string;
+  url: string;
+  data?: unknown;
   params?: unknown;
-}) => {
+};
+
+export const apiRequest = async ({ method, url, data, params }: ApiRequestArgs) => {
   try {
     const res = await instance.request({ method, url, data, params });
     return res.data;
@@ -86,9 +86,3 @@ export const apiRequest = async ({ method, url, data, params } : {
 };
 
 export default instance;
-
-/** Optional tiny helpers (if you like) */
-// export const get = (url, params) => apiRequest({ method: "GET", url, params });
-// export const post = (url, data, params) => apiRequest({ method: "POST", url, data, params });
-// export const put = (url, data, params) => apiRequest({ method: "PUT", url, data, params });
-// export const del = (url, params) => apiRequest({ method: "DELETE", url, params });

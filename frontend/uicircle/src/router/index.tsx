@@ -7,6 +7,7 @@ import { SearchPage } from "../features/search/pages/SearchPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
+import VerifyEmailPage from "@/pages/VerifyEmailPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -18,13 +19,17 @@ const AppRouter = createBrowserRouter([
     element: <SignUpPage />,
   },
   {
+    path: "/verify-email",
+    element: <VerifyEmailPage />,
+  },
+  {
     path: "/home",
     element: (
       <ProtectedRoute>
         <HomePage />
       </ProtectedRoute>
     ),
-  },
+  },  
   {
     path: "/category/:categorySlug",
     element: (
