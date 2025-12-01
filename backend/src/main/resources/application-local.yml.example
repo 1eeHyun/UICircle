@@ -11,7 +11,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
@@ -30,37 +30,33 @@ spring:
       repositories:
         enabled: false
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:your_email@gmail.com}
-    password: ${MAIL_PASSWORD:your_app_password}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
   servlet:
     multipart:
       max-file-size: 5MB
       max-request-size: 50MB
 
+sendgrid:
+  api-key: ${SENDGRID_API_KEY:your_sendgrid_api_key}
+
+app:
+  mail:
+    from-email: ${APP_MAIL_FROM:no-reply@example.com}
+    frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
 jwt:
-  secret: ${JWT_SECRET:local_dev_secret}
-  access-token-expiration: 3600          # Access token (sec)
-  refresh-token-expiration: 604800       # Refresh token (sec, 7 days)
+  secret: ${JWT_SECRET:your_jwt_secret}
+  access-token-expiration: 3600
+  refresh-token-expiration: 604800
 
 logging:
   level:
-    root: INFO
     org.hibernate.SQL: DEBUG
     org.springframework.web: INFO
+    org.flywaydb: INFO
 
 cloud:
   aws:
     region:
-      static: ${AWS_REGION}
+      static: ${AWS_REGION:us-east-2}
     s3:
-      bucket: ${S3_BUCKET}
+      bucket: ${S3_BUCKET:example-bucket}
