@@ -10,7 +10,9 @@ import edu.uic.marketplace.model.user.UserRole;
 import edu.uic.marketplace.model.user.UserStatus;
 import edu.uic.marketplace.repository.user.UserRepository;
 import edu.uic.marketplace.repository.verification.EmailVerificationRepository;
+import edu.uic.marketplace.repository.verification.PasswordResetRepository;
 import edu.uic.marketplace.security.JwtTokenProvider;
+import edu.uic.marketplace.service.email.EmailService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,8 +32,10 @@ class AuthServiceImplTest {
 
     @Mock private UserRepository userRepository;
     @Mock private EmailVerificationRepository emailVerificationRepository;
+    @Mock private PasswordResetRepository passwordResetRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private EmailService emailService;
     @Mock private AuthValidator authValidator;
 
     @InjectMocks
@@ -73,7 +77,7 @@ class AuthServiceImplTest {
     class SignupTests {
 
         @Test
-        @DisplayName("Success: saves new user, encodes password, status ACTIVE")
+        @DisplayName("Success: saves new user, encodes password, status PENDING")
         void signup_success() {
 
             // given
@@ -101,7 +105,8 @@ class AuthServiceImplTest {
             assertThat(saved.getUsername()).isEqualTo("lee");
             assertThat(saved.getEmail()).isEqualTo("lee@example.com");
             assertThat(saved.getPasswordHash()).isEqualTo("ENCODED");
-            assertThat(saved.getStatus()).isEqualTo(UserStatus.ACTIVE);
+            // 🔥 implementation uses PENDING, not ACTIVE
+            assertThat(saved.getStatus()).isEqualTo(UserStatus.PENDING);
             assertThat(saved.getEmailVerified()).isFalse();
             assertThat(saved.getCreatedAt()).isNotNull();
         }
@@ -148,7 +153,7 @@ class AuthServiceImplTest {
     class LoginTests {
 
         @Test
-        @DisplayName("Success: issues JWTs, computes expiresIn, updates lastLoginAt")
+        @DisplayName("Success: issues JWTs, computes expiresIn, updates lastLoginAt via repository")
         void login_success() {
 
             // given
@@ -159,7 +164,9 @@ class AuthServiceImplTest {
             User user = userEntity("lee", "lee@example.com", "ENC", UserStatus.ACTIVE);
 
             when(authValidator.validateLogin("lee", "pw1234")).thenReturn(user);
-            when(jwtTokenProvider.generateToken("lee")).thenReturn("ATOKEN").thenReturn("RTOKEN");
+            when(jwtTokenProvider.generateToken("lee"))
+                    .thenReturn("ATOKEN")
+                    .thenReturn("RTOKEN");
             when(jwtTokenProvider.getJwtExpirationInMs()).thenReturn(900_000L); // 15 minutes
 
             // when
@@ -176,8 +183,8 @@ class AuthServiceImplTest {
             verify(jwtTokenProvider, times(2)).generateToken("lee");
             verify(jwtTokenProvider).getJwtExpirationInMs();
 
-            // lastLoginAt should be updated
-            assertThat(user.getLastLoginAt()).isNotNull();
+            // 🔥 check repository update instead of entity field
+            verify(userRepository).updateLastLoginAt(eq(user.getUserId()), any(Instant.class));
         }
 
         @Test
@@ -198,6 +205,29 @@ class AuthServiceImplTest {
                     .hasMessageContaining("Invalid email/username or password");
 
             verify(jwtTokenProvider, never()).generateToken(anyString());
+            verify(userRepository, never()).updateLastLoginAt(anyLong(), any());
+        }
+
+        @Test
+        @DisplayName("Fail: PENDING user cannot login → IllegalStateException")
+        void login_pendingUser() {
+
+            // given
+            LoginRequest req = new LoginRequest();
+            req.setEmailOrUsername("lee");
+            req.setPassword("pw1234");
+
+            User pendingUser = userEntity("lee", "lee@example.com", "ENC", UserStatus.PENDING);
+
+            when(authValidator.validateLogin("lee", "pw1234")).thenReturn(pendingUser);
+
+            // when / then
+            assertThatThrownBy(() -> authService.login(req))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Email verification required");
+
+            verify(jwtTokenProvider, never()).generateToken(anyString());
+            verify(userRepository, never()).updateLastLoginAt(anyLong(), any());
         }
     }
 }
