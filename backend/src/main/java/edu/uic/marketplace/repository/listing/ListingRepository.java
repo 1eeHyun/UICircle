@@ -2,12 +2,10 @@ package edu.uic.marketplace.repository.listing;
 
 import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.ListingStatus;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -59,6 +57,29 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Find listing by public ID with status in given set where not deleted
      */
     Optional<Listing> findByPublicIdAndStatusInAndDeletedAtIsNull(String publicId, Collection<ListingStatus> statuses);
+
+    /**
+     * Find active listings (no user exclusion)
+     */
+    @EntityGraph(attributePaths = {"seller", "category"})
+    @Query("SELECT l FROM Listing l WHERE l.status = :status AND l.deletedAt IS NULL")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Page<Listing> findByStatus(@Param("status") ListingStatus status, Pageable pageable);
+
+    /**
+     * Find active listings excluding specific users (OPTIMIZED)
+     */
+    @EntityGraph(attributePaths = {"seller", "category"})
+    @Query("SELECT l FROM Listing l " +
+            "WHERE l.status = :status " +
+            "AND l.seller.username NOT IN :excludedUsernames " +
+            "AND l.deletedAt IS NULL")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Page<Listing> findByStatusExcludingUsers(
+            @Param("status") ListingStatus status,
+            @Param("excludedUsernames") List<String> excludedUsernames,
+            Pageable pageable
+    );
 
     /**
      * Check if listing exists by public ID
@@ -201,6 +222,23 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     Page<Listing> findByCategoryWithDetails(@Param("categorySlug") String categorySlug,
                                             @Param("status") ListingStatus status,
                                             Pageable pageable);
+
+    /**
+     * Find listings by category slug excluding blocked users (OPTIMIZED)
+     */
+    @EntityGraph(attributePaths = {"seller", "category"})
+    @Query("SELECT l FROM Listing l " +
+            "WHERE l.category.slug = :categorySlug " +
+            "AND l.status = :status " +
+            "AND l.seller.username NOT IN :excludedUsernames " +
+            "AND l.deletedAt IS NULL")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Page<Listing> findByCategoryExcludingUsers(
+            @Param("categorySlug") String categorySlug,
+            @Param("status") ListingStatus status,
+            @Param("excludedUsernames") List<String> excludedUsernames,
+            Pageable pageable
+    );
 
     /**
      * Find listings by category slug and status in set where not deleted

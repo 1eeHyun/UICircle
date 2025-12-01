@@ -16,6 +16,7 @@ import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.listing.ListingRepository;
 import edu.uic.marketplace.service.common.S3Service;
 import edu.uic.marketplace.service.common.Utils;
+import edu.uic.marketplace.service.moderation.BlockService;
 import edu.uic.marketplace.service.search.ViewHistoryService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
@@ -31,7 +32,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +52,7 @@ public class ListingServiceImpl implements ListingService {
     private final S3Service s3Service;
     private final FavoriteService favoriteService;
     private final ViewHistoryService viewHistoryService;
+    private final BlockService blockService;
 
     @Override
     @Transactional
@@ -192,7 +196,6 @@ public class ListingServiceImpl implements ListingService {
 
         // 3) inactivate
         listing.setStatus(ListingStatus.INACTIVE);
-//        listingRepository.updateStatus(publicId, ListingStatus.INACTIVE);
     }
 
     @Override
@@ -210,7 +213,6 @@ public class ListingServiceImpl implements ListingService {
 
         // 3) reactivate
         listing.setStatus(ListingStatus.ACTIVE);
-//        listingRepository.updateStatus(publicId, ListingStatus.ACTIVE);
     }
 
     @Override
@@ -230,7 +232,6 @@ public class ListingServiceImpl implements ListingService {
 
         // 3) mark as sold
         listing.setStatus(ListingStatus.SOLD);
-//        listingRepository.updateStatus(publicId, ListingStatus.SOLD);
     }
 
     @Override
@@ -244,11 +245,20 @@ public class ListingServiceImpl implements ListingService {
         // 2) Get user
         User user = authValidator.validateUserByUsername(username);
 
-        // 3) Check if favorited
+        // 3) Check for block relationship (bidirectional)
+        String sellerUsername = listing.getSeller().getUsername();
+        if (blockService.isBlocked(username, sellerUsername)) {
+            throw new IllegalArgumentException("Cannot view listing due to block relationship");
+        }
+
+        // 4) Check if favorited
         boolean isFavorite = favoriteService.isFavorited(username, publicId);
 
-        // 4) Increment view count asynchronously
+        // 5) Increment view count asynchronously (only if not seller)
         incrementViewCountIfNotSellerAsync(publicId, user.getUserId());
+
+        // 6) Record view history
+        viewHistoryService.recordView(username, publicId);
 
         return ListingResponse.from(listing, isFavorite);
     }
@@ -273,18 +283,32 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ListingSummaryResponse> getAllActiveListings(String username, int page, int size, String sortBy, String sortDirection) {
+    public PageResponse<ListingSummaryResponse> getAllActiveListings(
+            String username, int page, int size, String sortBy, String sortDirection) {
 
         Pageable pageable = Utils.buildPageable(page, size, sortBy, sortDirection);
 
-        Page<Listing> result = listingRepository.findByStatusWithDetails(ListingStatus.ACTIVE, pageable);
+        // Get all blocked usernames (bidirectional)
+        List<String> blockedUsernames = blockService.getAllBlockRelatedUsernames(username);
+
+        // Choose appropriate method based on blocked users
+        Page<Listing> result;
+        if (blockedUsernames == null || blockedUsernames.isEmpty()) {
+            result = listingRepository.findByStatus(ListingStatus.ACTIVE, pageable);
+        } else {
+            result = listingRepository.findByStatusExcludingUsers(
+                    ListingStatus.ACTIVE,
+                    blockedUsernames,
+                    pageable
+            );
+        }
 
         // Batch favorite check
         List<String> listingIds = result.getContent().stream()
                 .map(Listing::getPublicId)
                 .toList();
 
-        java.util.Set<String> favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
+        Set<String> favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
 
         List<ListingSummaryResponse> content = result.getContent().stream()
                 .map(listing -> {
@@ -298,21 +322,32 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ListingSummaryResponse> getListingsByCategory(String username, String categorySlug, int page, int size, String sortBy, String sortDirection) {
+    public PageResponse<ListingSummaryResponse> getListingsByCategory(
+            String username, String categorySlug, int page, int size, String sortBy, String sortDirection) {
 
         categoryValidator.validateLeafCategory(categorySlug);
 
         Pageable pageable = Utils.buildPageable(page, size, sortBy, sortDirection);
 
-        Page<Listing> result = listingRepository.findByCategoryWithDetails(
-                categorySlug, ListingStatus.ACTIVE, pageable);
+        // Get all blocked usernames (bidirectional)
+        List<String> blockedUsernames = blockService.getAllBlockRelatedUsernames(username);
+
+        // Choose appropriate method based on blocked users
+        Page<Listing> result;
+        if (blockedUsernames == null || blockedUsernames.isEmpty()) {
+            result = listingRepository.findByCategoryWithDetails(
+                    categorySlug, ListingStatus.ACTIVE, pageable);
+        } else {
+            result = listingRepository.findByCategoryExcludingUsers(
+                    categorySlug, ListingStatus.ACTIVE, blockedUsernames, pageable);
+        }
 
         // Batch favorite check
         List<String> listingIds = result.getContent().stream()
                 .map(Listing::getPublicId)
                 .toList();
 
-        java.util.Set<String> favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
+        Set<String> favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
 
         List<ListingSummaryResponse> content = result.getContent().stream()
                 .map(listing -> {
@@ -402,7 +437,7 @@ public class ListingServiceImpl implements ListingService {
         }
 
         // Batch favorite check if user is logged in
-        java.util.Set<String> favoritedIds = java.util.Collections.emptySet();
+        Set<String> favoritedIds = Collections.emptySet();
         if (username != null) {
             List<String> listingIds = pageResult.getContent().stream()
                     .map(Listing::getPublicId)
@@ -410,7 +445,7 @@ public class ListingServiceImpl implements ListingService {
             favoritedIds = favoriteService.getFavoritedListingIds(username, listingIds);
         }
 
-        final java.util.Set<String> finalFavoritedIds = favoritedIds;
+        final Set<String> finalFavoritedIds = favoritedIds;
         List<ListingSummaryResponse> content = pageResult.getContent().stream()
                 .map(l -> ListingSummaryResponse.from(l, finalFavoritedIds.contains(l.getPublicId())))
                 .toList();

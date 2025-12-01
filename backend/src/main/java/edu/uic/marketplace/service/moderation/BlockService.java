@@ -13,61 +13,51 @@ public interface BlockService {
     
     /**
      * Block user
-     * @param blockerId Blocker user ID
-     * @param blockedId Blocked user ID
+     * @param blockerUsername Blocker username
+     * @param blockedUsername Blocked username
      * @return Created block response
      */
-    BlockResponse blockUser(Long blockerId, Long blockedId);
+    BlockResponse blockUser(String blockerUsername, String blockedUsername);
     
     /**
      * Unblock user
-     * @param blockerId Blocker user ID
-     * @param blockedId Blocked user ID
+     * @param blockerUsername Blocker username
+     * @param blockedUsername Blocked username
      */
-    void unblockUser(Long blockerId, Long blockedId);
+    void unblockUser(String blockerUsername, String blockedUsername);
     
     /**
      * Get block relationship
-     * @param blockerId Blocker user ID
-     * @param blockedId Blocked user ID
+     * @param blockerUsername Blocker username
+     * @param blockerUsername Blocked username
      * @return Block entity if exists
      */
-    Optional<Block> findByBlockerAndBlocked(Long blockerId, Long blockedId);
+    Optional<Block> findByBlockerAndBlocked(String blockerUsername, String blockedUsername);
     
     /**
      * Get list of users blocked by user
-     * @param userId Blocker user ID
+     * @param username Blocker user ID
      * @return List of blocked user responses
      */
-    List<BlockResponse> getBlockedUsers(Long userId);
+    List<BlockResponse> getBlockedUsers(String username);
     
     /**
      * Get list of users who blocked this user
-     * @param userId Blocked user ID
+     * @param username Blocked username
      * @return List of blocker user responses
      */
-    List<BlockResponse> getBlockers(Long userId);
+    List<BlockResponse> getBlockers(String username);
     
     /**
      * Check if user has blocked another user
-     * @param blockerId Blocker user ID
-     * @param blockedId Blocked user ID
+     * @param blockerUsername Blocker username
+     * @param blockedUsername Blocked username
      * @return true if blocked, false otherwise
      */
-    boolean isBlocked(Long blockerId, Long blockedId);
-    
+    boolean isBlocked(String blockerUsername, String blockedUsername);
+
     /**
-     * Check if there is any block relationship between two users
-     * @param userId1 First user ID
-     * @param userId2 Second user ID
-     * @return true if either user has blocked the other
+     * Get all usernames that have block relationship with user (blocked + blockers)
      */
-    boolean hasBlockRelationship(Long userId1, Long userId2);
-    
-    /**
-     * Get blocked user IDs (for filtering)
-     * @param userId User ID
-     * @return List of blocked user IDs
-     */
-    List<Long> getBlockedUserIds(Long userId);
+    List<String> getAllBlockRelatedUsernames(String username);
 }
