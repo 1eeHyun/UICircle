@@ -57,8 +57,8 @@ class CategoryServiceImplTest {
         Category laptops = make("Laptops / Tablets", "laptops");  // child
         Category tech = makeWithChildren("electronics & tech", "electronics", laptops); // root
 
-        given(categoryRepository.findAllWithChildren())
-                .willReturn(List.of(books, eng, tech, laptops));
+        given(categoryRepository.findRootCategories())
+                .willReturn(List.of(books, tech));
 
         List<CategoryResponse> result = service.getAllCategories();
 
