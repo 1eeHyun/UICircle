@@ -1,6 +1,8 @@
 package edu.uic.marketplace.dto.request.moderation;
 
-import jakarta.validation.constraints.NotBlank;
+import edu.uic.marketplace.model.moderation.ReportStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -10,8 +12,9 @@ import lombok.*;
 @Builder
 public class ResolveReportRequest {
 
-    @NotBlank(message = "Action is required")
-    private String action;  // RESOLVE or DISMISS
+    @NotNull(message = "Status is required")
+    private ReportStatus status;
 
-    private String note;
+    @Size(max = 1000, message = "Resolution note must be less than 1000 characters")
+    private String resolutionNote;
 }

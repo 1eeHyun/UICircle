@@ -14,7 +14,7 @@ import java.util.UUID;
         indexes = {
                 @Index(name = "idx_reports_reporter_id", columnList = "reporter_id"),
                 @Index(name = "idx_reports_target_type", columnList = "target_type"),
-                @Index(name = "idx_reports_target_id", columnList = "target_id"),
+                @Index(name = "idx_reports_target_public_id", columnList = "target_public_id"),
                 @Index(name = "idx_reports_status", columnList = "status"),
                 @Index(name = "idx_reports_created_at", columnList = "created_at")
         }
@@ -42,22 +42,25 @@ public class Report {
     private User reporter;
 
     /**
-     * Type of entity being reported (listing, user, message, etc.)
+     * Type of entity being reported
      */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false, length = 50)
-    private String targetType;
+    private ReportTargetType targetType = ReportTargetType.LISTING;
 
     /**
-     * ID of the entity being reported
+     * Public ID of the entity being reported (Listing.publicId, Message.publicId, etc.)
      */
-    @Column(name = "target_id", nullable = false)
-    private Long targetId;
+    @Column(name = "target_public_id", nullable = false, length = 36)
+    private String targetPublicId;
 
     /**
      * Report reason category
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "reason", nullable = false, length = 100)
-    private String reason;
+    private ReportReason reason;
 
     /**
      * Detailed description of the report
