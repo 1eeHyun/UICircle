@@ -42,4 +42,16 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Favorite.Fav
      * Find all favorites by user (for batch operations)
      */
     List<Favorite> findByUser(User user);
+
+    @Query("""
+           SELECT l.publicId 
+           FROM Favorite f 
+           JOIN f.listing l
+           WHERE f.user.username = :username 
+             AND l.publicId IN :listingPublicIds
+           """)
+    List<String> findFavoritedListingPublicIds(
+            @Param("username") String username,
+            @Param("listingPublicIds") List<String> listingPublicIds
+    );
 }

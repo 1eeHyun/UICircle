@@ -5,6 +5,7 @@ import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.message.ConversationResponse;
 import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.message.Conversation;
+import edu.uic.marketplace.model.message.Message;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.message.ConversationRepository;
 import edu.uic.marketplace.repository.message.MessageRepository;
@@ -62,6 +63,7 @@ class ConversationServiceImplTest {
         return Listing.builder()
                 .publicId(publicId)
                 .seller(seller)
+                .listingId(1L)
                 .build();
     }
 
@@ -74,6 +76,16 @@ class ConversationServiceImplTest {
                 .sellerUnreadCount(0)
                 .buyerUnreadCount(0)
                 .lastMessageAt(Instant.now())
+                .build();
+    }
+
+    private Message createMessage(String publicId, Conversation conversation, User sender) {
+        return Message.builder()
+                .publicId(publicId)
+                .conversation(conversation)
+                .sender(sender)
+                .body("Test message")
+                .createdAt(Instant.now())
                 .build();
     }
 
@@ -259,6 +271,7 @@ class ConversationServiceImplTest {
         @Test
         @DisplayName("should return paginated conversation responses for current user")
         void getConversations_success() {
+
             // given
             String username = "user1";
             User currentUser = createUser(1L, username);
@@ -274,11 +287,16 @@ class ConversationServiceImplTest {
             );
 
             when(authValidator.validateUserByUsername(username)).thenReturn(currentUser);
-            when(conversationRepository.findVisibleConversations(eq(currentUser.getUserId()), any(Pageable.class)))
-                    .thenReturn(convPage);
+            when(conversationRepository.findVisibleConversationsOptimized(
+                    eq(currentUser.getUserId()),
+                    any(Pageable.class)
+            )).thenReturn(convPage);
 
-            when(messageRepository.findLatestMessages(eq(conv.getPublicId()), any(Pageable.class)))
-                    .thenReturn(Page.empty());
+            Message lastMessage = createMessage("msg-id", conv, otherUser);
+            when(messageRepository.findLatestMessagesByConversationIds(
+                    eq(List.of(conv.getPublicId())),
+                    any(Pageable.class)
+            )).thenReturn(List.of(lastMessage));
 
             // when
             PageResponse<ConversationResponse> result =
@@ -288,8 +306,45 @@ class ConversationServiceImplTest {
             assertThat(result).isNotNull();
             assertThat(result.getContent()).hasSize(1);
 
-            verify(conversationRepository).findVisibleConversations(eq(currentUser.getUserId()), any(Pageable.class));
-            verify(messageRepository).findLatestMessages(eq(conv.getPublicId()), any(Pageable.class));
+            verify(conversationRepository).findVisibleConversationsOptimized(
+                    eq(currentUser.getUserId()),
+                    any(Pageable.class)
+            );
+            verify(messageRepository).findLatestMessagesByConversationIds(
+                    eq(List.of(conv.getPublicId())),
+                    any(Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("should handle empty conversations list")
+        void getConversations_empty() {
+            // given
+            String username = "user1";
+            User currentUser = createUser(1L, username);
+
+            Page<Conversation> emptyPage = new PageImpl<>(
+                    List.of(),
+                    PageRequest.of(0, 20),
+                    0
+            );
+
+            when(authValidator.validateUserByUsername(username)).thenReturn(currentUser);
+            when(conversationRepository.findVisibleConversationsOptimized(
+                    eq(currentUser.getUserId()),
+                    any(Pageable.class)
+            )).thenReturn(emptyPage);
+
+            // when
+            PageResponse<ConversationResponse> result =
+                    conversationService.getConversations(username, 0, 20);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.getContent()).isEmpty();
+
+            // Should not call findLatestMessagesByConversationIds when no conversations
+            verify(messageRepository, never()).findLatestMessagesByConversationIds(anyList(), any());
         }
     }
 

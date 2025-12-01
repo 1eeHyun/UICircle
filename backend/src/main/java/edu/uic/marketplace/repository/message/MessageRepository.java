@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,6 +24,20 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * Find messages by conversation public ID
      */
     Page<Message> findByConversation_PublicId(String conversationPublicId, Pageable pageable);
+
+    /**
+     * Prevents N+1 query when loading messages
+     */
+    @Query("""
+           SELECT m FROM Message m
+           LEFT JOIN FETCH m.sender
+           WHERE m.conversation.publicId = :conversationPublicId
+           ORDER BY m.createdAt ASC
+           """)
+    Page<Message> findByConversation_PublicIdWithSenderOptimized(
+            @Param("conversationPublicId") String conversationPublicId,
+            Pageable pageable
+    );
 
     /**
      * Find messages by conversation ASC order
@@ -89,6 +104,25 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
           """)
     Page<Message> findLatestMessages(
             @Param("publicId") String publicId,
+            Pageable pageable
+    );
+
+    /**
+     * This is used to fetch last messages for all conversations in a single query
+     */
+    @Query("""
+            SELECT m FROM Message m
+            LEFT JOIN FETCH m.sender
+            WHERE m.conversation.publicId IN :conversationIds
+              AND m.messageId IN (
+                  SELECT MAX(m2.messageId) 
+                  FROM Message m2 
+                  WHERE m2.conversation.publicId = m.conversation.publicId
+              )
+            ORDER BY m.createdAt DESC
+            """)
+    List<Message> findLatestMessagesByConversationIds(
+            @Param("conversationIds") List<String> conversationIds,
             Pageable pageable
     );
 

@@ -71,15 +71,30 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     Long countUnreadByUsername(@Param("username") String username);
 
     /**
-     * Find conversations visible to a specific user (not soft-deleted for that user),
-     * ordered by lastMessageAt in descending order.
-     * This is intended for conversation list UI.
+     * This prevents N+1 queries by fetching buyer, seller, and listing in a single query
      */
     @Query("""
-            SELECT c FROM Conversation c
+            SELECT DISTINCT c FROM Conversation c
+            LEFT JOIN FETCH c.buyer
+            LEFT JOIN FETCH c.seller
+            LEFT JOIN FETCH c.listing
             WHERE (c.seller.userId = :userId AND c.sellerDeletedAt IS NULL)
                OR (c.buyer.userId = :userId AND c.buyerDeletedAt IS NULL)
             ORDER BY c.lastMessageAt DESC
             """)
-    Page<Conversation> findVisibleConversations(@Param("userId") Long userId, Pageable pageable);
+    Page<Conversation> findVisibleConversationsOptimized(@Param("userId") Long userId, Pageable pageable);
+
+    /**
+     * This is used as a secondary query to fetch last messages for all conversations at once
+     */
+    @Query("""
+            SELECT c.publicId, 
+                   (SELECT m FROM Message m 
+                    WHERE m.conversation.publicId = c.publicId 
+                    ORDER BY m.createdAt DESC 
+                    LIMIT 1)
+            FROM Conversation c
+            WHERE c.publicId IN :conversationIds
+            """)
+    Page<Object[]> findLastMessagesForConversations(@Param("conversationIds") java.util.List<String> conversationIds, Pageable pageable);
 }

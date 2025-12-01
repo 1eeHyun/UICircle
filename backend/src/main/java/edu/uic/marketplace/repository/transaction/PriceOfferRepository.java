@@ -3,6 +3,8 @@ package edu.uic.marketplace.repository.transaction;
 import edu.uic.marketplace.model.listing.OfferStatus;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,23 +16,86 @@ public interface PriceOfferRepository extends JpaRepository<PriceOffer, Long> {
     /** Find by publicId */
     Optional<PriceOffer> findByPublicId(String publicId);
 
+    /**
+     * Find by publicId with all related entities pre-loaded
+     */
+    @Query("""
+           SELECT po FROM PriceOffer po
+           LEFT JOIN FETCH po.listing l
+           LEFT JOIN FETCH l.seller
+           LEFT JOIN FETCH po.buyer
+           WHERE po.publicId = :publicId
+           """)
+    Optional<PriceOffer> findByPublicIdWithDetailsOptimized(@Param("publicId") String publicId);
+
     /** Check existence by publicId (not strictly needed yet, but ok to keep) */
     boolean existsByPublicId(String publicId);
 
     /** Find all offers for a listing (optionally you can add OrderByCreatedAtDesc) */
     List<PriceOffer> findByListing_PublicId(String listingPublicId);
 
-    // If you care about ordering:
-    // List<PriceOffer> findByListing_PublicIdOrderByCreatedAtDesc(String listingPublicId);
+    /**
+     * Find all offers for a listing with related entities pre-loaded
+     */
+    @Query("""
+           SELECT po FROM PriceOffer po
+           LEFT JOIN FETCH po.buyer
+           LEFT JOIN FETCH po.listing l
+           LEFT JOIN FETCH l.seller
+           WHERE l.publicId = :listingPublicId
+           ORDER BY po.createdAt DESC
+           """)
+    List<PriceOffer> findByListing_PublicIdWithDetailsOptimized(@Param("listingPublicId") String listingPublicId);
 
     /** Find all offers for a listing by status */
     List<PriceOffer> findByListing_PublicIdAndStatus(String listingPublicId, OfferStatus status);
 
+    /**
+     * Find all offers for a listing by status with details
+     */
+    @Query("""
+           SELECT po FROM PriceOffer po
+           LEFT JOIN FETCH po.buyer
+           LEFT JOIN FETCH po.listing l
+           LEFT JOIN FETCH l.seller
+           WHERE l.publicId = :listingPublicId 
+             AND po.status = :status
+           ORDER BY po.createdAt DESC
+           """)
+    List<PriceOffer> findByListing_PublicIdAndStatusWithDetailsOptimized(
+            @Param("listingPublicId") String listingPublicId,
+            @Param("status") OfferStatus status
+    );
+
     /** Find offers sent by a buyer */
     List<PriceOffer> findByBuyer_Username(String buyerUsername);
 
+    /**
+     * Find offers sent by a buyer with details
+     */
+    @Query("""
+           SELECT po FROM PriceOffer po
+           LEFT JOIN FETCH po.listing l
+           LEFT JOIN FETCH l.seller
+           WHERE po.buyer.username = :buyerUsername
+           ORDER BY po.createdAt DESC
+           """)
+    List<PriceOffer> findByBuyer_UsernameWithDetailsOptimized(@Param("buyerUsername") String buyerUsername);
+
     /** Find offers received by a seller */
     List<PriceOffer> findByListing_Seller_Username(String sellerUsername);
+
+    /**
+     * Find offers received by a seller with details
+     */
+    @Query("""
+           SELECT po FROM PriceOffer po
+           LEFT JOIN FETCH po.buyer
+           LEFT JOIN FETCH po.listing l
+           WHERE l.seller.username = :sellerUsername
+           ORDER BY po.createdAt DESC
+           """)
+    List<PriceOffer> findByListing_Seller_UsernameWithDetailsOptimized(@Param("sellerUsername") String sellerUsername);
 
     /** Check if buyer has pending offer on listing */
     boolean existsByBuyer_UsernameAndListing_PublicIdAndStatus(

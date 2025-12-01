@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.QueryHint;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,12 +30,16 @@ public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> 
     Optional<ViewHistory> findByUsernameAndListingPublicId(@Param("username") String username,
                                                            @Param("listingPublicId") String listingPublicId);
 
+    Optional<ViewHistory> findByUser_UserIdAndListing_ListingId(Long userId, Long listingId);
+
     /**
      * Find user's view history with pagination, ordered by most recent first
      * Fetch joins with listing to avoid N+1 problem
      */
     @Query(value = "SELECT vh FROM ViewHistory vh " +
             "JOIN FETCH vh.listing l " +
+            "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.category " +
             "JOIN vh.user u " +
             "WHERE u.username = :username " +
             "ORDER BY vh.viewedAt DESC",
@@ -51,7 +55,9 @@ public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> 
      */
     @Query("SELECT DISTINCT vh FROM ViewHistory vh " +
             "JOIN FETCH vh.listing l " +
-            "JOIN FETCH vh.user u " +
+            "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.category " +
+            "JOIN vh.user u " +
             "WHERE u.username = :username " +
             "ORDER BY vh.viewedAt DESC")
     @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
@@ -102,7 +108,7 @@ public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> 
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM ViewHistory vh WHERE vh.viewedAt < :cutoffDate")
-    void deleteOldViewHistory(@Param("cutoffDate") LocalDateTime cutoffDate);
+    void deleteOldViewHistory(@Param("cutoffDate") Instant cutoffDate);
 
     /**
      * Count total views for a specific listing
@@ -116,14 +122,16 @@ public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> 
      */
     @Query("SELECT DISTINCT vh FROM ViewHistory vh " +
             "JOIN FETCH vh.listing l " +
+            "LEFT JOIN FETCH l.seller " +
+            "LEFT JOIN FETCH l.category " +
             "JOIN vh.user u " +
             "WHERE u.username = :username " +
             "AND vh.viewedAt BETWEEN :startDate AND :endDate " +
             "ORDER BY vh.viewedAt DESC")
     @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     List<ViewHistory> findByUsernameAndDateRangeWithListing(@Param("username") String username,
-                                                            @Param("startDate") LocalDateTime startDate,
-                                                            @Param("endDate") LocalDateTime endDate);
+                                                            @Param("startDate") Instant startDate,
+                                                            @Param("endDate") Instant endDate);
 
     /**
      * Batch update viewed_at timestamp for multiple view histories
@@ -135,5 +143,5 @@ public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> 
             "AND vh.listing.publicId = :listingPublicId")
     void updateViewedAt(@Param("username") String username,
                         @Param("listingPublicId") String listingPublicId,
-                        @Param("viewedAt") LocalDateTime viewedAt);
+                        @Param("viewedAt") Instant viewedAt);
 }

@@ -22,7 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -120,14 +121,37 @@ public class ConversationServiceImpl implements ConversationService {
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
-        // 3) Load only conversations visible to this user (not soft-deleted)
+        // 3) Load conversations with all related entities in one query
         Page<Conversation> conversations =
-                conversationRepository.findVisibleConversations(currentUserId, pageable);
+                conversationRepository.findVisibleConversationsOptimized(currentUserId, pageable);
 
-        // 4) Map to DTO
+        // 4) Batch fetch last messages for all conversations
+        List<String> conversationIds = conversations.getContent().stream()
+                .map(Conversation::getPublicId)
+                .toList();
+
+        // Fetch last messages in a single batch query
+        Map<String, Message> lastMessagesMap = new HashMap<>();
+        if (!conversationIds.isEmpty()) {
+            List<Message> lastMessages = messageRepository.findLatestMessagesByConversationIds(
+                    conversationIds,
+                    PageRequest.of(0, conversationIds.size())
+            );
+
+            // Group by conversation public ID
+            lastMessagesMap = lastMessages.stream()
+                    .collect(Collectors.toMap(
+                            m -> m.getConversation().getPublicId(),
+                            m -> m,
+                            (m1, m2) -> m1.getCreatedAt().isAfter(m2.getCreatedAt()) ? m1 : m2
+                    ));
+        }
+
+        // 5) Map to DTO (no additional queries needed!)
+        final Map<String, Message> finalLastMessagesMap = lastMessagesMap;
         Page<ConversationResponse> dtoPage = conversations.map(conv -> {
 
-            // Determine the other participant
+            // Determine the other participant (already loaded via JOIN FETCH)
             User other = conv.getSeller().getUserId().equals(currentUserId)
                     ? conv.getBuyer()
                     : conv.getSeller();
@@ -137,17 +161,11 @@ public class ConversationServiceImpl implements ConversationService {
                     ? conv.getSellerUnreadCount()
                     : conv.getBuyerUnreadCount();
 
-            // Fetch the latest (last) message, may be empty if no messages
-            Page<Message> lastMessagePage = messageRepository.findLatestMessages(
-                    conv.getPublicId(),
-                    PageRequest.of(0, 1)
-            );
-
-            MessageResponse lastMessageDto = lastMessagePage
-                    .stream()
-                    .findFirst()
-                    .map(MessageResponse::from)
-                    .orElse(null);
+            // Get last message from our batch-fetched map
+            Message lastMessage = finalLastMessagesMap.get(conv.getPublicId());
+            MessageResponse lastMessageDto = lastMessage != null
+                    ? MessageResponse.from(lastMessage)
+                    : null;
 
             return ConversationResponse.from(
                     conv,

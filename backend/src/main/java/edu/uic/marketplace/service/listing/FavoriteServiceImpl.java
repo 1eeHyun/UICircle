@@ -114,12 +114,11 @@ public class FavoriteServiceImpl implements FavoriteService {
             return Collections.emptySet();
         }
 
-        User user = authValidator.validateUserByUsername(username);
-        List<Favorite> favorites = favoriteRepository.findByUser(user);
+        List<String> favoritedIds = favoriteRepository.findFavoritedListingPublicIds(
+                username,
+                listingPublicIds
+        );
 
-        return favorites.stream()
-                .map(fav -> fav.getListing().getPublicId())
-                .filter(listingPublicIds::contains)
-                .collect(Collectors.toSet());
+        return favoritedIds.stream().collect(Collectors.toSet());
     }
 }

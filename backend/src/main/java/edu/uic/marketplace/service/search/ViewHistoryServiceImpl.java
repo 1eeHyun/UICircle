@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -47,10 +48,18 @@ public class ViewHistoryServiceImpl implements ViewHistoryService {
             return viewHistoryRepository.save(viewHistory);
         }
 
-        // Create new view history
+        // Create ViewHistoryId first, then set it
+        ViewHistory.ViewHistoryId id = new ViewHistory.ViewHistoryId(
+                user.getUserId(),
+                listing.getListingId()
+        );
+
+        // Create new view history with properly set ID
         ViewHistory viewHistory = ViewHistory.builder()
+                .id(id)
                 .user(user)
                 .listing(listing)
+                .viewedAt(Instant.now())
                 .build();
 
         return viewHistoryRepository.save(viewHistory);

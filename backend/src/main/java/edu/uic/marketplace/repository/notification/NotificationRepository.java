@@ -4,6 +4,7 @@ import edu.uic.marketplace.model.notification.Notification;
 import edu.uic.marketplace.model.notification.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,12 +18,38 @@ import java.util.Optional;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     /**
-     * Find all notifications for a user ordered by creation time (newest first).
+     * Prevents N+1 query when loading notifications
+     */
+    @EntityGraph(attributePaths = {"user"})
+    @Query("""
+           SELECT n FROM Notification n
+           WHERE n.user.username = :username
+           ORDER BY n.createdAt DESC
+           """)
+    Page<Notification> findByUser_UsernameOrderByCreatedAtDescOptimized(
+            @Param("username") String username,
+            Pageable pageable
+    );
+
+    /**
+     * Original method (kept for backward compatibility)
      */
     Page<Notification> findByUser_UsernameOrderByCreatedAtDesc(String username, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"user"})
+    @Query("""
+           SELECT n FROM Notification n
+           WHERE n.user.username = :username
+             AND n.readAt IS NULL
+           ORDER BY n.createdAt DESC
+           """)
+    Page<Notification> findByUser_UsernameAndReadAtIsNullOrderByCreatedAtDescOptimized(
+            @Param("username") String username,
+            Pageable pageable
+    );
+
     /**
-     * Find unread notifications for a user ordered by creation time (newest first).
+     * Original method (kept for backward compatibility)
      */
     Page<Notification> findByUser_UsernameAndReadAtIsNullOrderByCreatedAtDesc(String username, Pageable pageable);
 
