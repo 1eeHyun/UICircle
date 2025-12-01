@@ -152,6 +152,10 @@ public class AuthServiceImpl implements AuthService {
         String input = request.getEmailOrUsername() == null ? "" : request.getEmailOrUsername().trim();
 
         User user = authValidator.validateLogin(input, request.getPassword());
+        // Check user's verification status
+        if (user.getStatus() == UserStatus.PENDING) {
+            throw new IllegalStateException("Email verification required");
+        }
 
         // JWT
         String accessToken = jwtTokenProvider.generateToken(user.getUsername());
