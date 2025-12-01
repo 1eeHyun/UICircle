@@ -6,7 +6,6 @@ import edu.uic.marketplace.dto.response.search.ViewHistoryResponse;
 import edu.uic.marketplace.model.search.ViewHistory;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * View history management service interface
@@ -15,61 +14,48 @@ public interface ViewHistoryService {
     
     /**
      * Record listing view
-     * @param userId User ID
-     * @param listingId Listing ID
+     * @param username Username
+     * @param listingPublicId Listing Public ID
      * @return Created view history
      */
-    ViewHistory recordView(Long userId, Long listingId);
-    
-    /**
-     * Get view history by composite ID
-     * @param id Composite key (userId + listingId)
-     * @return ViewHistory entity
-     */
-    Optional<ViewHistory> findById(ViewHistory.ViewHistoryId id);
+    ViewHistory recordView(String username, String listingPublicId);
+
     
     /**
      * Get user's view history
-     * @param userId User ID
+     * @param username Username
      * @param page Page number
      * @param size Page size
      * @return Paginated view history responses
      */
-    PageResponse<ViewHistoryResponse> getUserViewHistory(Long userId, Integer page, Integer size);
+    PageResponse<ViewHistoryResponse> getUserViewHistory(String username, Integer page, Integer size, String sortBy, String sortDirection);
     
     /**
      * Get recently viewed listings
-     * @param userId User ID
+     * @param username Username
      * @param limit Number of listings to return
      * @return List of listing summaries
      */
-    List<ListingSummaryResponse> getRecentlyViewedListings(Long userId, Integer limit);
+    List<ListingSummaryResponse> getRecentlyViewedListings(String username, Integer limit);
     
     /**
      * Clear user's view history
-     * @param userId User ID
+     * @param username Username
      */
-    void clearViewHistory(Long userId);
+    void clearViewHistory(String username);
     
     /**
      * Delete specific view history entry
-     * @param userId User ID
-     * @param listingId Listing ID
+     * @param username Username
+     * @param listingPublicId Listing Public ID
      */
-    void deleteViewHistory(Long userId, Long listingId);
+    void deleteViewHistory(String username, String listingPublicId);
     
     /**
      * Check if user has viewed listing
-     * @param userId User ID
-     * @param listingId Listing ID
+     * @param username User ID
+     * @param listingPublicId Listing Public ID
      * @return true if viewed, false otherwise
      */
-    boolean hasViewed(Long userId, Long listingId);
-    
-    /**
-     * Get view count for listing
-     * @param listingId Listing ID
-     * @return Number of unique views
-     */
-    Long getViewCountForListing(Long listingId);
+    boolean hasViewed(String username, String listingPublicId);
 }

@@ -15,14 +15,13 @@ import edu.uic.marketplace.model.listing.ListingStatus;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.listing.ListingRepository;
 import edu.uic.marketplace.service.common.S3Service;
+import edu.uic.marketplace.service.common.Utils;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -267,7 +266,7 @@ public class ListingServiceImpl implements ListingService {
     @Transactional(readOnly = true)
     public PageResponse<ListingSummaryResponse> getAllActiveListings(String username, int page, int size, String sortBy, String sortDirection) {
 
-        Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
+        Pageable pageable = Utils.buildPageable(page, size, sortBy, sortDirection);
 
         Page<Listing> result = listingRepository.findByStatusWithDetails(ListingStatus.ACTIVE, pageable);
 
@@ -294,7 +293,7 @@ public class ListingServiceImpl implements ListingService {
 
         categoryValidator.validateLeafCategory(categorySlug);
 
-        Pageable pageable = buildPageable(page, size, sortBy, sortDirection);
+        Pageable pageable = Utils.buildPageable(page, size, sortBy, sortDirection);
 
         Page<Listing> result = listingRepository.findByCategoryWithDetails(
                 categorySlug, ListingStatus.ACTIVE, pageable);
@@ -337,7 +336,7 @@ public class ListingServiceImpl implements ListingService {
 
         String sortBy = (request.getSortBy() == null || request.getSortBy().isBlank()) ? "createdAt" : request.getSortBy();
         String sortDir = (request.getSortOrder() != null && request.getSortOrder().equalsIgnoreCase("asc")) ? "ASC" : "DESC";
-        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        Pageable pageable = Utils.buildPageable(page, size, sortBy, sortDir);
 
         // when keyword exists to prevent N+1
         Page<Listing> pageResult;
@@ -497,14 +496,5 @@ public class ListingServiceImpl implements ListingService {
         for (String url : urls) {
             try { s3Service.deleteByUrl(url); } catch (Exception ignore) {}
         }
-    }
-
-    private Pageable buildPageable(int page, int size, String sortBy, String sortDirection) {
-
-        List<String> allowed = List.of("createdAt", "price", "viewCount", "favoriteCount");
-        String field = allowed.contains(sortBy) ? sortBy : "createdAt";
-
-        Sort.Direction dir = "ASC".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return PageRequest.of(page, size, Sort.by(dir, field));
     }
 }
