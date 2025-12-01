@@ -226,7 +226,7 @@ public class ListingServiceImpl implements ListingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ListingResponse getListingByPublicId(String publicId, String username) {
 
         // 1) Fetch listing with all details
