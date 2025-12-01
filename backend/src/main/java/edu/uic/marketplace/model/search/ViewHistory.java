@@ -47,6 +47,10 @@ public class ViewHistory {
         }
     }
 
+    public void updateViewedAt() {
+        viewedAt = Instant.now();
+    }
+
     @Embeddable
     @Getter
     @Setter

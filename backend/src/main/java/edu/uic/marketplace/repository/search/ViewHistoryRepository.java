@@ -4,54 +4,118 @@ import edu.uic.marketplace.model.search.ViewHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.QueryHint;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ViewHistoryRepository extends JpaRepository<ViewHistory, ViewHistory.ViewHistoryId> {
-    
+public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> {
+
     /**
-     * Find view history by user
+     * Find view history by username and listing public ID
+     * Uses read-only hint for performance
      */
-    Page<ViewHistory> findByUser_UserId(Long userId, Pageable pageable);
-    
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Optional<ViewHistory> findByUsernameAndListingPublicId(String username, String listingPublicId);
+
     /**
-     * Find view history by user ordered by viewed date
+     * Find user's view history with pagination, ordered by most recent first
+     * Fetch joins with listing to avoid N+1 problem
      */
-    Page<ViewHistory> findByUser_UserIdOrderByViewedAtDesc(Long userId, Pageable pageable);
-    
+    @Query(value = "SELECT vh FROM ViewHistory vh " +
+            "LEFT JOIN FETCH vh.listing " +
+            "WHERE vh.username = :username " +
+            "ORDER BY vh.viewedAt DESC",
+            countQuery = "SELECT COUNT(vh) FROM ViewHistory vh WHERE vh.username = :username")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Page<ViewHistory> findByUsernameWithListing(@Param("username") String username, Pageable pageable);
+
     /**
-     * Find view history by user and listing
+     * Find recent views by username with listing information
+     * Optimized with fetch join to prevent N+1 queries
      */
-    Optional<ViewHistory> findByUser_UserIdAndListing_ListingId(Long userId, Long listingId);
-    
+    @Query("SELECT DISTINCT vh FROM ViewHistory vh " +
+            "LEFT JOIN FETCH vh.listing l " +
+            "LEFT JOIN FETCH l.user " +
+            "WHERE vh.username = :username " +
+            "ORDER BY vh.viewedAt DESC")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    List<ViewHistory> findRecentViewsWithListingByUsername(@Param("username") String username, Pageable pageable);
+
     /**
-     * Check if user has viewed listing
+     * Delete all view history for a user
+     * Uses batch delete for better performance
      */
-    boolean existsByUser_UserIdAndListing_ListingId(Long userId, Long listingId);
-    
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ViewHistory vh WHERE vh.username = :username")
+    void deleteByUsername(@Param("username") String username);
+
     /**
-     * Count views for listing
+     * Delete view history for a specific listing
+     * Uses batch delete for better performance
      */
-    Long countByListing_ListingId(Long listingId);
-    
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ViewHistory vh WHERE vh.username = :username AND vh.listingPublicId = :listingPublicId")
+    void deleteByUsernameAndListingPublicId(@Param("username") String username,
+                                            @Param("listingPublicId") String listingPublicId);
+
     /**
-     * Get recently viewed listings for user
+     * Check if user has viewed a specific listing
+     * Optimized with EXISTS query
      */
-    @Query("SELECT vh FROM ViewHistory vh WHERE vh.user.userId = :userId " +
-           "ORDER BY vh.viewedAt DESC")
-    List<ViewHistory> findRecentlyViewedByUser(Long userId, Pageable pageable);
-    
+    @Query("SELECT CASE WHEN COUNT(vh) > 0 THEN true ELSE false END " +
+            "FROM ViewHistory vh WHERE vh.username = :username AND vh.listingPublicId = :listingPublicId")
+    boolean existsByUsernameAndListingPublicId(@Param("username") String username,
+                                               @Param("listingPublicId") String listingPublicId);
+
     /**
-     * Delete view history by user
+     * Count total view history entries for a user
      */
-    void deleteByUser_UserId(Long userId);
-    
+    @Query("SELECT COUNT(vh) FROM ViewHistory vh WHERE vh.username = :username")
+    long countByUsername(@Param("username") String username);
+
     /**
-     * Delete view history by listing
+     * Delete old view history in batches (for data cleanup)
+     * Uses batch delete for better performance on large datasets
      */
-    void deleteByListing_ListingId(Long listingId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ViewHistory vh WHERE vh.viewedAt < :cutoffDate")
+    void deleteOldViewHistory(@Param("cutoffDate") LocalDateTime cutoffDate);
+
+    /**
+     * Count total views for a specific listing
+     */
+    @Query("SELECT COUNT(vh) FROM ViewHistory vh WHERE vh.listingPublicId = :listingPublicId")
+    long countByListingPublicId(@Param("listingPublicId") String listingPublicId);
+
+    /**
+     * Find view history within a date range with listing information
+     */
+    @Query("SELECT DISTINCT vh FROM ViewHistory vh " +
+            "LEFT JOIN FETCH vh.listing " +
+            "WHERE vh.username = :username " +
+            "AND vh.viewedAt BETWEEN :startDate AND :endDate " +
+            "ORDER BY vh.viewedAt DESC")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    List<ViewHistory> findByUsernameAndDateRangeWithListing(@Param("username") String username,
+                                                            @Param("startDate") LocalDateTime startDate,
+                                                            @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Batch update viewed_at timestamp for multiple view histories
+     * More efficient than updating one by one
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ViewHistory vh SET vh.viewedAt = :viewedAt " +
+            "WHERE vh.username = :username AND vh.listingPublicId = :listingPublicId")
+    void updateViewedAt(@Param("username") String username,
+                        @Param("listingPublicId") String listingPublicId,
+                        @Param("viewedAt") LocalDateTime viewedAt);
 }
