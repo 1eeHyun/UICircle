@@ -16,6 +16,7 @@ import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.listing.ListingRepository;
 import edu.uic.marketplace.service.common.S3Service;
 import edu.uic.marketplace.service.common.Utils;
+import edu.uic.marketplace.service.search.ViewHistoryService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
@@ -47,6 +48,7 @@ public class ListingServiceImpl implements ListingService {
     // services
     private final S3Service s3Service;
     private final FavoriteService favoriteService;
+    private final ViewHistoryService viewHistoryService;
 
     @Override
     @Transactional
@@ -167,7 +169,11 @@ public class ListingServiceImpl implements ListingService {
         listingValidator.validateSellerOwnership(user, listing.getSeller());
 
         // 2) soft delete
-        listingRepository.softDelete(publicId, Instant.now());
+        Instant now = Instant.now();
+        listing.setStatus(ListingStatus.DELETED);
+        listing.setDeletedAt(now);
+
+        listingRepository.softDelete(publicId, now);
     }
 
     @Override
@@ -185,7 +191,8 @@ public class ListingServiceImpl implements ListingService {
         }
 
         // 3) inactivate
-        listingRepository.updateStatus(publicId, ListingStatus.INACTIVE);
+        listing.setStatus(ListingStatus.INACTIVE);
+//        listingRepository.updateStatus(publicId, ListingStatus.INACTIVE);
     }
 
     @Override
@@ -202,7 +209,8 @@ public class ListingServiceImpl implements ListingService {
             throw new IllegalStateException("Only INACTIVE listing can be ACTIVE.");
 
         // 3) reactivate
-        listingRepository.updateStatus(publicId, ListingStatus.ACTIVE);
+        listing.setStatus(ListingStatus.ACTIVE);
+//        listingRepository.updateStatus(publicId, ListingStatus.ACTIVE);
     }
 
     @Override
@@ -221,11 +229,12 @@ public class ListingServiceImpl implements ListingService {
             throw new IllegalStateException("Only ACTIVE listing can be marked as SOLD.");
 
         // 3) mark as sold
-        listingRepository.updateStatus(publicId, ListingStatus.SOLD);
+        listing.setStatus(ListingStatus.SOLD);
+//        listingRepository.updateStatus(publicId, ListingStatus.SOLD);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ListingResponse getListingByPublicId(String publicId, String username) {
 
         // 1) Fetch listing with all details
@@ -443,6 +452,15 @@ public class ListingServiceImpl implements ListingService {
     @Override
     @Transactional
     public void incrementViewCount(String publicId) {
+
+        Listing listing = listingValidator.validateActiveListingByPublicId(publicId);
+
+        Integer current = listing.getViewCount();
+        if (current == null) {
+            current = 0;
+        }
+
+        listing.setViewCount(current + 1);
         listingRepository.incrementViewCount(publicId);
     }
 
