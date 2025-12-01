@@ -13,6 +13,7 @@ import edu.uic.marketplace.repository.verification.EmailVerificationRepository;
 import edu.uic.marketplace.repository.verification.PasswordResetRepository;
 import edu.uic.marketplace.security.JwtTokenProvider;
 import edu.uic.marketplace.service.email.EmailService;
+import edu.uic.marketplace.service.user.ProfileService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+    private final ProfileService profileService;
 
     private final AuthValidator authValidator;
 
@@ -69,7 +71,10 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
 
-        // 3) Create verification token
+        // 3) Create profile for the new user
+        profileService.createProfile(user);
+
+        // 4) Create verification token
         String token = UUID.randomUUID().toString();
         EmailVerification verification = EmailVerification.builder()
                 .user(user)
@@ -79,7 +84,8 @@ public class AuthServiceImpl implements AuthService {
 
         emailVerificationRepository.save(verification);
 
-        // 4) Send verification email
+
+        // 5) Send verification email
         try {
             emailService.sendVerificationEmail(user.getEmail(), token);
         } catch (Exception e) {

@@ -23,6 +23,13 @@ public interface UserService {
      * @return User entity
      */
     Optional<User> findByEmail(String email);
+
+    /**
+     * Find user by email
+     * @param Username
+     * @return User entity
+     */
+    Optional<User> findByUsername(String Username);
     
     /**
      * Get user response by ID

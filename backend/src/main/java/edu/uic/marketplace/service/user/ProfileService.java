@@ -3,6 +3,7 @@ package edu.uic.marketplace.service.user;
 import edu.uic.marketplace.dto.request.user.UpdateProfileRequest;
 import edu.uic.marketplace.dto.response.user.ProfileResponse;
 import edu.uic.marketplace.model.user.Profile;
+import edu.uic.marketplace.model.user.User;
 
 import java.util.Optional;
 
@@ -10,48 +11,54 @@ import java.util.Optional;
  * Profile management service interface
  */
 public interface ProfileService {
-    
+
     /**
-     * Get profile by user ID
-     * @param userId User ID
+     * Create a new profile
+     * @Param User user
+     */
+    void createProfile(User user);
+
+    /**
+     * Get profile by username
+     * @param username Username
      * @return Profile entity
      */
-    Optional<Profile> findByUserId(Long userId);
+    Optional<Profile> findByUsername(String username);
     
     /**
-     * Get profile response by user ID
-     * @param userId User ID
+     * Get profile response by username
+     * @param username User ID
      * @return ProfileResponse DTO
      */
-    ProfileResponse getProfileByUserId(Long userId);
+    ProfileResponse getProfileByUsername(String username);
     
     /**
      * Update user profile
-     * @param userId User ID
+     * @param username Username
      * @param request Update profile request
      * @return Updated ProfileResponse
      */
-    ProfileResponse updateProfile(Long userId, UpdateProfileRequest request);
+    ProfileResponse updateProfile(String username, UpdateProfileRequest request);
     
     /**
      * Upload avatar image
-     * @param userId User ID
+     * @param username Username
      * @param imageUrl Image URL
      * @return Updated ProfileResponse
      */
-    ProfileResponse uploadAvatar(Long userId, String imageUrl);
+    ProfileResponse uploadAvatar(String username, String imageUrl);
     
     /**
      * Increment sold count
-     * @param userId User ID
+     * @param username
      */
-    void incrementSoldCount(Long userId);
+    void incrementSoldCount(String username);
     
     /**
      * Increment buy count
-     * @param userId User ID
+     * @param username
      */
-    void incrementBuyCount(Long userId);
+    void incrementBuyCount(String username);
     
     /**
      * Check if display name is available

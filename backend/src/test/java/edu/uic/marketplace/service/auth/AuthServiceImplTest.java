@@ -13,6 +13,7 @@ import edu.uic.marketplace.repository.verification.EmailVerificationRepository;
 import edu.uic.marketplace.repository.verification.PasswordResetRepository;
 import edu.uic.marketplace.security.JwtTokenProvider;
 import edu.uic.marketplace.service.email.EmailService;
+import edu.uic.marketplace.service.user.ProfileService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,7 @@ class AuthServiceImplTest {
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private EmailService emailService;
     @Mock private AuthValidator authValidator;
+    @Mock private ProfileService profileService;
 
     @InjectMocks
     private AuthServiceImpl authService;

@@ -10,7 +10,7 @@ import lombok.*;
 @Builder
 public class ProfileResponse {
 
-    private Long userId;
+    private String publicId;
     private String displayName;
     private String avatarUrl;
     private String bio;
@@ -20,7 +20,7 @@ public class ProfileResponse {
 
     public static ProfileResponse from(Profile profile) {
         return ProfileResponse.builder()
-                .userId(profile.getUserId())
+                .publicId(profile.getPublicId())
                 .displayName(profile.getDisplayName())
                 .avatarUrl(profile.getAvatarUrl())
                 .bio(profile.getBio())

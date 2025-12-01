@@ -22,6 +22,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Optional<User> findByUsername(String Username) {
+        return Optional.empty();
+    }
+
+    @Override
     public UserResponse getUserById(Long userId) {
         return null;
     }
