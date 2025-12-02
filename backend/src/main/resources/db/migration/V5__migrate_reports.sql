@@ -1,183 +1,135 @@
 -- ============================================================================
--- STEP 1: Add target_public_id column if it doesn't exist
+-- STEP 1: Add target_public_id column (idempotent)
 -- ============================================================================
 
--- Check if target_public_id already exists
-SET @target_public_id_exists = (
+SET @col_exists := (
     SELECT COUNT(*)
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'reports'
-    AND COLUMN_NAME = 'target_public_id'
+      AND TABLE_NAME   = 'reports'
+      AND COLUMN_NAME  = 'target_public_id'
 );
 
--- Add column only if it doesn't exist
-SET @add_column_sql = IF(@target_public_id_exists = 0,
+SET @add_col_sql := IF(@col_exists = 0,
     'ALTER TABLE reports ADD COLUMN target_public_id VARCHAR(36) AFTER target_type',
-    'SELECT "target_public_id already exists, skipping" AS status'
+    'SELECT 1'
 );
 
-PREPARE stmt FROM @add_column_sql;
+PREPARE stmt FROM @add_col_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
--- STEP 2: Migrate data from target_id to target_public_id (if target_id exists)
+-- STEP 2: target_id -> target_public_id migration
 -- ============================================================================
 
--- Check if target_id exists
-SET @target_id_exists = (
+SET @target_id_exists := (
     SELECT COUNT(*)
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'reports'
-    AND COLUMN_NAME = 'target_id'
-);
-
--- Only migrate if target_id exists and has data
-SET @has_data = IF(@target_id_exists > 0,
-    (SELECT COUNT(*) FROM reports WHERE target_id IS NOT NULL),
-    0
+      AND TABLE_NAME   = 'reports'
+      AND COLUMN_NAME  = 'target_id'
 );
 
 -- LISTING migration
-SET @migrate_listing = IF(@has_data > 0,
-    'UPDATE reports r
-     JOIN listings l ON r.target_id = l.listing_id
-     SET r.target_public_id = l.public_id
-     WHERE (r.target_type = "LISTING" OR r.target_type = "listing")
-     AND r.target_public_id IS NULL',
-    'SELECT "No migration needed for LISTING" AS status'
-);
-
-PREPARE stmt FROM @migrate_listing;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+UPDATE reports r
+JOIN listings l ON r.target_id = l.listing_id
+SET r.target_public_id = l.public_id
+WHERE (r.target_type = 'LISTING' OR r.target_type = 'listing')
+  AND r.target_public_id IS NULL
+  AND @target_id_exists > 0;
 
 -- USER migration
-SET @migrate_user = IF(@has_data > 0,
-    'UPDATE reports r
-     JOIN users u ON r.target_id = u.user_id
-     SET r.target_public_id = u.public_id
-     WHERE (r.target_type = "USER" OR r.target_type = "user")
-     AND r.target_public_id IS NULL',
-    'SELECT "No migration needed for USER" AS status'
-);
-
-PREPARE stmt FROM @migrate_user;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+UPDATE reports r
+JOIN users u ON r.target_id = u.user_id
+SET r.target_public_id = u.public_id
+WHERE (r.target_type = 'USER' OR r.target_type = 'user')
+  AND r.target_public_id IS NULL
+  AND @target_id_exists > 0;
 
 -- MESSAGE migration
-SET @migrate_message = IF(@has_data > 0,
-    'UPDATE reports r
-     JOIN messages m ON r.target_id = m.message_id
-     SET r.target_public_id = m.public_id
-     WHERE (r.target_type = "MESSAGE" OR r.target_type = "message")
-     AND r.target_public_id IS NULL',
-    'SELECT "No migration needed for MESSAGE" AS status'
-);
-
-PREPARE stmt FROM @migrate_message;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+UPDATE reports r
+JOIN messages m ON r.target_id = m.message_id
+SET r.target_public_id = m.public_id
+WHERE (r.target_type = 'MESSAGE' OR r.target_type = 'message')
+  AND r.target_public_id IS NULL
+  AND @target_id_exists > 0;
 
 -- REVIEW migration
-SET @migrate_review = IF(@has_data > 0,
-    'UPDATE reports r
-     JOIN reviews rev ON r.target_id = rev.review_id
-     SET r.target_public_id = rev.public_id
-     WHERE (r.target_type = "REVIEW" OR r.target_type = "review")
-     AND r.target_public_id IS NULL',
-    'SELECT "No migration needed for REVIEW" AS status'
-);
-
-PREPARE stmt FROM @migrate_review;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+UPDATE reports r
+JOIN reviews rev ON r.target_id = rev.review_id
+SET r.target_public_id = rev.public_id
+WHERE (r.target_type = 'REVIEW' OR r.target_type = 'review')
+  AND r.target_public_id IS NULL
+  AND @target_id_exists > 0;
 
 -- PRICE_OFFER migration
-SET @migrate_offer = IF(@has_data > 0,
-    'UPDATE reports r
-     JOIN price_offers po ON r.target_id = po.offer_id
-     SET r.target_public_id = po.public_id
-     WHERE (r.target_type = "PRICE_OFFER" OR r.target_type = "price_offer")
-     AND r.target_public_id IS NULL',
-    'SELECT "No migration needed for PRICE_OFFER" AS status'
-);
-
-PREPARE stmt FROM @migrate_offer;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
+UPDATE reports r
+JOIN price_offers po ON r.target_id = po.offer_id
+SET r.target_public_id = po.public_id
+WHERE (r.target_type = 'PRICE_OFFER' OR r.target_type = 'price_offer')
+  AND r.target_public_id IS NULL
+  AND @target_id_exists > 0;
 
 -- ============================================================================
--- STEP 3: Handle orphaned records (deleted entities)
+-- STEP 3: Handle orphaned records
 -- ============================================================================
 
--- Auto-resolve reports with no target_public_id (deleted entities)
 UPDATE reports
-SET status = 'RESOLVED',
+SET status          = 'RESOLVED',
     resolution_note = 'Target entity was deleted before migration',
-    resolved_at = NOW()
+    resolved_at     = NOW()
 WHERE target_public_id IS NULL
-AND status = 'PENDING'
-AND @target_id_exists > 0;
+  AND status = 'PENDING'
+  AND @target_id_exists > 0;
 
 -- ============================================================================
--- STEP 4: Drop old target_id column if it exists
+-- STEP 4: Drop target_id column
 -- ============================================================================
 
-SET @drop_target_id = IF(@target_id_exists > 0,
+SET @drop_sql := IF(@target_id_exists > 0,
     'ALTER TABLE reports DROP COLUMN target_id',
-    'SELECT "target_id does not exist, skipping drop" AS status'
+    'SELECT 1'
 );
 
-PREPARE stmt FROM @drop_target_id;
+PREPARE stmt FROM @drop_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
--- STEP 5: Make target_public_id NOT NULL (if possible)
+-- STEP 5: Create indexes
 -- ============================================================================
 
--- Check if all rows have target_public_id
-SET @null_count = (SELECT COUNT(*) FROM reports WHERE target_public_id IS NULL);
-
--- Only set NOT NULL if all rows have values
-SET @modify_column = IF(@null_count = 0 AND @target_public_id_exists > 0,
-    'ALTER TABLE reports MODIFY COLUMN target_public_id VARCHAR(36) NOT NULL',
-    'SELECT "Skipping NOT NULL constraint - some rows have NULL values" AS status'
+SET @idx1_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'reports'
+      AND INDEX_NAME   = 'idx_reports_target_public_id'
 );
 
-PREPARE stmt FROM @modify_column;
+SET @create_idx1_sql := IF(@idx1_exists = 0,
+    'CREATE INDEX idx_reports_target_public_id ON reports(target_public_id)',
+    'SELECT 1'
+);
+
+PREPARE stmt FROM @create_idx1_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- ============================================================================
--- STEP 6: Update indexes
--- ============================================================================
+SET @idx2_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'reports'
+      AND INDEX_NAME   = 'idx_reports_target_type_public_id'
+);
 
--- Drop old index if exists
-ALTER TABLE reports DROP INDEX IF EXISTS idx_reports_target_id;
+SET @create_idx2_sql := IF(@idx2_exists = 0,
+    'CREATE INDEX idx_reports_target_type_public_id ON reports(target_type, target_public_id)',
+    'SELECT 1'
+);
 
--- Create new indexes (IF NOT EXISTS for idempotency)
-CREATE INDEX IF NOT EXISTS idx_reports_target_public_id
-ON reports(target_public_id);
-
-CREATE INDEX IF NOT EXISTS idx_reports_target_type_public_id
-ON reports(target_type, target_public_id);
-
--- ============================================================================
--- STEP 7: Validation
--- ============================================================================
-
--- Log migration results
-SELECT
-    'V5 Migration Complete' AS status,
-    (SELECT COUNT(*) FROM reports) AS total_reports,
-    (SELECT COUNT(*) FROM reports WHERE target_public_id IS NOT NULL) AS migrated_reports,
-    (SELECT COUNT(*) FROM reports WHERE target_public_id IS NULL) AS null_reports;
-
--- ============================================================================
--- END OF MIGRATION
--- ============================================================================
+PREPARE stmt FROM @create_idx2_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
