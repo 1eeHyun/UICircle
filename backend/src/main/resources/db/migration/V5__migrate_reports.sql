@@ -31,45 +31,115 @@ SET @target_id_exists := (
       AND COLUMN_NAME  = 'target_id'
 );
 
+SET @listings_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'listings'
+);
+
+SET @users_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'users'
+);
+
+SET @messages_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'messages'
+);
+
+SET @reviews_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'reviews'
+);
+
+SET @price_offers_exists := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'price_offers'
+);
+
 -- LISTING migration
-UPDATE reports r
-JOIN listings l ON r.target_id = l.listing_id
-SET r.target_public_id = l.public_id
-WHERE (r.target_type = 'LISTING' OR r.target_type = 'listing')
-  AND r.target_public_id IS NULL
-  AND @target_id_exists > 0;
+SET @listing_migration_sql := IF(
+    @target_id_exists > 0 AND @listings_exists > 0,
+    'UPDATE reports r
+     JOIN listings l ON r.target_id = l.listing_id
+     SET r.target_public_id = l.public_id
+     WHERE (r.target_type = ''LISTING'' OR r.target_type = ''listing'')
+       AND r.target_public_id IS NULL',
+    'SELECT 1'
+);
+
+PREPARE stmt FROM @listing_migration_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- USER migration
-UPDATE reports r
-JOIN users u ON r.target_id = u.user_id
-SET r.target_public_id = u.public_id
-WHERE (r.target_type = 'USER' OR r.target_type = 'user')
-  AND r.target_public_id IS NULL
-  AND @target_id_exists > 0;
+SET @user_migration_sql := IF(
+    @target_id_exists > 0 AND @users_exists > 0,
+    'UPDATE reports r
+     JOIN users u ON r.target_id = u.user_id
+     SET r.target_public_id = u.public_id
+     WHERE (r.target_type = ''USER'' OR r.target_type = ''user'')
+       AND r.target_public_id IS NULL',
+    'SELECT 1'
+);
+
+PREPARE stmt FROM @user_migration_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- MESSAGE migration
-UPDATE reports r
-JOIN messages m ON r.target_id = m.message_id
-SET r.target_public_id = m.public_id
-WHERE (r.target_type = 'MESSAGE' OR r.target_type = 'message')
-  AND r.target_public_id IS NULL
-  AND @target_id_exists > 0;
+SET @message_migration_sql := IF(
+    @target_id_exists > 0 AND @messages_exists > 0,
+    'UPDATE reports r
+     JOIN messages m ON r.target_id = m.message_id
+     SET r.target_public_id = m.public_id
+     WHERE (r.target_type = ''MESSAGE'' OR r.target_type = ''message'')
+       AND r.target_public_id IS NULL',
+    'SELECT 1'
+);
+
+PREPARE stmt FROM @message_migration_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- REVIEW migration
-UPDATE reports r
-JOIN reviews rev ON r.target_id = rev.review_id
-SET r.target_public_id = rev.public_id
-WHERE (r.target_type = 'REVIEW' OR r.target_type = 'review')
-  AND r.target_public_id IS NULL
-  AND @target_id_exists > 0;
+SET @review_migration_sql := IF(
+    @target_id_exists > 0 AND @reviews_exists > 0,
+    'UPDATE reports r
+     JOIN reviews rev ON r.target_id = rev.review_id
+     SET r.target_public_id = rev.public_id
+     WHERE (r.target_type = ''REVIEW'' OR r.target_type = ''review'')
+       AND r.target_public_id IS NULL',
+    'SELECT 1'
+);
+
+PREPARE stmt FROM @review_migration_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- PRICE_OFFER migration
-UPDATE reports r
-JOIN price_offers po ON r.target_id = po.offer_id
-SET r.target_public_id = po.public_id
-WHERE (r.target_type = 'PRICE_OFFER' OR r.target_type = 'price_offer')
-  AND r.target_public_id IS NULL
-  AND @target_id_exists > 0;
+SET @price_offer_migration_sql := IF(
+    @target_id_exists > 0 AND @price_offers_exists > 0,
+    'UPDATE reports r
+     JOIN price_offers po ON r.target_id = po.offer_id
+     SET r.target_public_id = po.public_id
+     WHERE (r.target_type = ''PRICE_OFFER'' OR r.target_type = ''price_offer'')
+       AND r.target_public_id IS NULL',
+    'SELECT 1'
+);
+
+PREPARE stmt FROM @price_offer_migration_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
 -- STEP 3: Handle orphaned records
@@ -84,7 +154,7 @@ WHERE target_public_id IS NULL
   AND @target_id_exists > 0;
 
 -- ============================================================================
--- STEP 4: Drop target_id column
+-- STEP 4: Drop target_id column (idempotent)
 -- ============================================================================
 
 SET @drop_sql := IF(@target_id_exists > 0,
@@ -97,7 +167,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
--- STEP 5: Create indexes
+-- STEP 5: Create indexes (idempotent)
 -- ============================================================================
 
 SET @idx1_exists := (

@@ -44,4 +44,4 @@ sendgrid:
 app:
   mail:
     from-email: ${APP_MAIL_FROM:no-reply@uicircle.com}
-    frontend-url: ${FRONTEND_URL:https://localhost:5173}
+    frontend-url: ${FRONT_END_URLS:https://localhost:5173}
