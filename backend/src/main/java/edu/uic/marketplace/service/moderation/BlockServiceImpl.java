@@ -107,4 +107,11 @@ public class BlockServiceImpl implements BlockService {
 
         return new ArrayList<>(allBlocked);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isBlockedWithIds(Long blockerId, Long blockedId) {
+        if (blockerId.equals(blockedId)) return false;
+        return blockRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId);
+    }
 }

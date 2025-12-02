@@ -24,6 +24,14 @@ public interface FavoriteService {
      * @return true if favorited, false otherwise
      */
     boolean isFavorited(String username, String listingPublicId);
+
+    /**
+     * Check if user has favorited listing
+     * @param userId User ID
+     * @param listingId Listing ID
+     * @return true if favorited, false otherwise
+     */
+    boolean isFavoritedWithIds(Long userId, Long listingId);
     
     /**
      * Get user's favorite listings

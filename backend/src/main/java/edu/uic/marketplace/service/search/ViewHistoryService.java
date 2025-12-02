@@ -3,7 +3,9 @@ package edu.uic.marketplace.service.search;
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.listing.ListingSummaryResponse;
 import edu.uic.marketplace.dto.response.search.ViewHistoryResponse;
+import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.search.ViewHistory;
+import edu.uic.marketplace.model.user.User;
 
 import java.util.List;
 
@@ -20,6 +22,13 @@ public interface ViewHistoryService {
      */
     ViewHistory recordView(String username, String listingPublicId);
 
+    /**
+     * Record listing view
+     * @param user User
+     * @param listing Listing
+     * @return Created view history
+     */
+    ViewHistory recordViewWithEntities(User user, Listing listing);
     
     /**
      * Get user's view history

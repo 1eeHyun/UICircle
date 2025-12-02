@@ -57,6 +57,14 @@ public interface BlockService {
     boolean isBlocked(String blockerUsername, String blockedUsername);
 
     /**
+     * Check if user has blocked another user
+     * @param blockerId Blocker ID
+     * @param blockedId Blocked ID
+     * @return true if blocked, false otherwise
+     */
+    boolean isBlockedWithIds(Long blockerId, Long blockedId);
+
+    /**
      * Get all usernames that have block relationship with user (blocked + blockers)
      */
     List<String> getAllBlockRelatedUsernames(String username);

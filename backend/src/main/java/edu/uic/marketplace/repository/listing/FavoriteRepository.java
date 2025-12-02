@@ -54,4 +54,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Favorite.Fav
             @Param("username") String username,
             @Param("listingPublicIds") List<String> listingPublicIds
     );
+
+    boolean existsById_UserIdAndId_ListingId(Long userId, Long listingId);
 }

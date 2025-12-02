@@ -238,27 +238,27 @@ public class ListingServiceImpl implements ListingService {
     @Transactional
     public ListingResponse getListingByPublicId(String publicId, String username) {
 
-        // 1) Fetch listing with all details
+        // 1) listing with details
         Listing listing = listingRepository.findActiveByPublicIdWithDetails(publicId)
                 .orElseThrow(() -> new IllegalArgumentException("Listing not found or not active"));
 
-        // 2) Get user
-        User user = authValidator.validateUserByUsername(username);
+        // 2) viewer user
+        User viewer = authValidator.validateUserByUsername(username);
+        User seller = listing.getSeller();
 
-        // 3) Check for block relationship (bidirectional)
-        String sellerUsername = listing.getSeller().getUsername();
-        if (blockService.isBlocked(username, sellerUsername)) {
+        // 3) block check
+        if (blockService.isBlockedWithIds(viewer.getUserId(), seller.getUserId())) {
             throw new IllegalArgumentException("Cannot view listing due to block relationship");
         }
 
-        // 4) Check if favorited
-        boolean isFavorite = favoriteService.isFavorited(username, publicId);
+        // 4) favorite check
+        boolean isFavorite = favoriteService.isFavoritedWithIds(viewer.getUserId(), listing.getListingId());
 
-        // 5) Increment view count asynchronously (only if not seller)
-        incrementViewCountIfNotSellerAsync(publicId, user.getUserId());
+        // 5) view count
+        listingRepository.incrementViewCountIfNotSeller(publicId, viewer.getUserId());
 
-        // 6) Record view history
-        viewHistoryService.recordView(username, publicId);
+        // 6) view history
+        viewHistoryService.recordViewWithEntities(viewer, listing);
 
         return ListingResponse.from(listing, isFavorite);
     }
