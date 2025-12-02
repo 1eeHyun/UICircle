@@ -42,13 +42,6 @@ public interface BlockService {
     List<BlockResponse> getBlockedUsers(String username);
     
     /**
-     * Get list of users who blocked this user
-     * @param username Blocked username
-     * @return List of blocker user responses
-     */
-    List<BlockResponse> getBlockers(String username);
-    
-    /**
      * Check if user has blocked another user
      * @param blockerUsername Blocker username
      * @param blockedUsername Blocked username
