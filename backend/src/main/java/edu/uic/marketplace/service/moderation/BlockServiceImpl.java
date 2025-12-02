@@ -76,12 +76,6 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BlockResponse> getBlockers(String username) {
-        return null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public boolean isBlocked(String blockerUsername, String blockedUsername) {
 
         User blocker = authValidator.validateUserByUsername(blockerUsername);
