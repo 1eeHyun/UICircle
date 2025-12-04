@@ -8,10 +8,7 @@ import edu.uic.marketplace.service.notification.NotificationService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -22,6 +19,7 @@ public class NotificationController implements NotificationApiDocs {
     private final NotificationService notificationService;
 
     @Override
+    @GetMapping
     public ResponseEntity<CommonResponse<PageResponse<NotificationResponse>>> getNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -33,6 +31,7 @@ public class NotificationController implements NotificationApiDocs {
     }
 
     @Override
+    @GetMapping("/unread")
     public ResponseEntity<CommonResponse<PageResponse<NotificationResponse>>> getUnreadNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -44,6 +43,7 @@ public class NotificationController implements NotificationApiDocs {
     }
 
     @Override
+    @GetMapping("/unread/count")
     public ResponseEntity<CommonResponse<Long>> getUnreadCount() {
 
         String username = authValidator.extractUsername();
@@ -53,8 +53,9 @@ public class NotificationController implements NotificationApiDocs {
     }
 
     @Override
+    @PatchMapping("/{notificationId}/read")
     public ResponseEntity<CommonResponse<NotificationResponse>> markAsRead(
-            @PathVariable String notificationId) {
+            @PathVariable("notificationId") String notificationId) {
 
         String username = authValidator.extractUsername();
         NotificationResponse res = notificationService.markAsRead(notificationId, username);
@@ -63,6 +64,7 @@ public class NotificationController implements NotificationApiDocs {
     }
 
     @Override
+    @PatchMapping("/read-all")
     public ResponseEntity<CommonResponse<Void>> markAllAsRead() {
 
         String username = authValidator.extractUsername();
@@ -72,8 +74,9 @@ public class NotificationController implements NotificationApiDocs {
     }
 
     @Override
+    @DeleteMapping("/{notificationId}")
     public ResponseEntity<CommonResponse<Void>> deleteNotification(
-            @PathVariable String notificationId) {
+            @PathVariable("notificationId") String notificationId) {
 
         String username = authValidator.extractUsername();
         notificationService.deleteNotification(notificationId, username);
@@ -82,6 +85,7 @@ public class NotificationController implements NotificationApiDocs {
     }
 
     @Override
+    @DeleteMapping
     public ResponseEntity<CommonResponse<Void>> deleteAllNotifications() {
 
         String username = authValidator.extractUsername();
