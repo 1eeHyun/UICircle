@@ -8,6 +8,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
+import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -17,6 +18,10 @@ const AppRouter = createBrowserRouter([
   {
     path: "/signup",
     element: <SignUpPage />,
+  },
+  {
+    path: "/verify-email/pending",
+    element: <VerifyEmailPendingPage />,
   },
   {
     path: "/verify-email",

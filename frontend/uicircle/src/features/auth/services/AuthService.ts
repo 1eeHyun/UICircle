@@ -38,3 +38,10 @@ export const signup = async (form: SignupRequest) => {
   const response = await instance.post<{ success: boolean }>("/auth/signup", form);
   return response.data;
 };
+
+export const resendVerificationEmail = async (email: string) => {
+  const response = await instance.post<{ success: boolean }>("/auth/resend-verification", {
+    email,
+  });
+  return response.data;
+};
