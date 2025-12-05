@@ -1,6 +1,6 @@
 package edu.uic.marketplace.dto.response.listing;
 
-import edu.uic.marketplace.dto.response.user.UserResponse;
+import edu.uic.marketplace.dto.response.user.ProfileResponse;
 import edu.uic.marketplace.model.listing.ItemCondition;
 import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.ListingStatus;
@@ -24,7 +24,7 @@ public class ListingResponse {
     private BigDecimal price;
     private ItemCondition condition;
     private ListingStatus status;
-    private UserResponse seller;
+    private ProfileResponse sellerProfile;
     private CategoryResponse category;
     private Double latitude;
     private Double longitude;
@@ -48,7 +48,7 @@ public class ListingResponse {
                 .price(listing.getPrice())
                 .condition(listing.getCondition())
                 .status(listing.getStatus())
-                .seller(UserResponse.from(listing.getSeller()))
+                .sellerProfile(ProfileResponse.from(listing.getSeller().getProfile()))
                 .category(CategoryResponse.from(listing.getCategory()))
                 .latitude(listing.getLatitude())
                 .longitude(listing.getLongitude())
