@@ -1,3 +1,4 @@
+// src/pages/ListingDetailPage.tsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -20,6 +21,8 @@ import SellerListings from "@/features/listings/components/listing-detail/Seller
 import Breadcrumb from "@/features/listings/components/listing-detail/Breadcrumb";
 import LocationMap from "@/features/listings/components/listing-detail/LocationMap";
 
+import OfferModal from "@/features/transaction/components/OfferModal";
+
 const ListingDetailPage = () => {
   const { listingId } = useParams<{ listingId: string }>();
   const navigate = useNavigate();
@@ -28,6 +31,9 @@ const ListingDetailPage = () => {
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+
+  // Offer modal state
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,38 +56,39 @@ const ListingDetailPage = () => {
 
   // Handler functions
   const handleLike = () => {
-    // TODO: Implement like functionality
     console.log("Like clicked");
   };
 
   const handleShare = () => {
-    // TODO: Implement share functionality
     console.log("Share clicked");
   };
 
   const handleMore = () => {
-    // TODO: Implement more options
     console.log("More clicked");
   };
 
   const handleViewProfile = () => {
-    // TODO: Navigate to seller profile
     console.log("View profile clicked");
   };
 
   const handleAddToCart = () => {
-    // TODO: Implement add to cart
     console.log("Add to cart clicked");
   };
 
+  // Open offer modal
   const handleMakeOffer = () => {
-    // TODO: Implement make offer
-    console.log("Make offer clicked");
+    console.log("handleMakeOffer called"); // debug log
+    setIsOfferModalOpen(true);
   };
 
   const handleSeeAllSellerItems = () => {
-    // TODO: Navigate to seller's all items
     console.log("See all clicked");
+  };
+
+  // Called after offer is created (refetch, toast, etc.)
+  const handleOfferCreated = () => {
+    console.log("Offer created successfully");
+    // e.g. refetch listing / offers, or show a toast
   };
 
   if (loading) {
@@ -191,6 +198,16 @@ const ListingDetailPage = () => {
         {/* More from this seller */}
         <SellerListings onSeeAll={handleSeeAllSellerItems} />
       </div>
+
+      {/* Offer Modal at the bottom */}
+      <OfferModal
+        isOpen={isOfferModalOpen}
+        onClose={() => setIsOfferModalOpen(false)}
+        listingPrice={listing.price}
+        listingTitle={listing.title}
+        listingPublicId={listing.publicId}
+        onOfferCreated={handleOfferCreated}
+      />
     </div>
   );
 };

@@ -1,3 +1,6 @@
+// src/features/listings/components/listing-detail/ProductInfo.tsx
+import React from "react";
+
 interface ProductInfoProps {
   title: string;
   price: number;
@@ -5,12 +8,12 @@ interface ProductInfoProps {
   onMakeOffer?: () => void;
 }
 
-const ProductInfo = ({
+const ProductInfo: React.FC<ProductInfoProps> = ({
   title,
   price,
   onAddToCart,
   onMakeOffer,
-}: ProductInfoProps) => {
+}) => {
   return (
     <div>
       {/* Title & Price */}
