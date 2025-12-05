@@ -59,7 +59,6 @@ const ListingDetailPage = () => {
   const handleLike = async () => {
     if (!listing) return;
 
-    // 이전 값 백업
     const prevIsFavorited = listing.isFavorited;
     const prevFavoriteCount = listing.favoriteCount;
 
@@ -79,7 +78,6 @@ const ListingDetailPage = () => {
     } catch (error) {
       console.error("Failed to toggle favorite:", error);
 
-      // 실패 시 롤백
       setListing({
         ...listing,
         isFavorited: prevIsFavorited,
@@ -97,12 +95,7 @@ const ListingDetailPage = () => {
   };
 
   const handleViewProfile = () => {
-    console.log("View profile clicked");
-    // 예: navigate(`/profile/${listing?.sellerProfile.publicId}`);
-  };
-
-  const handleAddToCart = () => {
-    console.log("Add to cart clicked");
+    navigate(`/profile/${listing?.sellerProfile.publicId}`);
   };
 
   // Open offer modal
@@ -112,7 +105,8 @@ const ListingDetailPage = () => {
   };
 
   const handleSeeAllSellerItems = () => {
-    console.log("See all clicked");
+    if (!listing) return;
+    navigate(`/profile/${listing.sellerProfile.publicId}?tab=listings`);
   };
 
   // Called after offer is created (refetch, toast, etc.)
@@ -120,6 +114,10 @@ const ListingDetailPage = () => {
     console.log("Offer created successfully");
     // e.g. refetch listing / offers, or show a toast
   };
+
+  const handleSellSimilar = () => {
+    navigate("/listing/create");
+  };  
 
   if (loading) {
     return (
@@ -181,13 +179,15 @@ const ListingDetailPage = () => {
               <SellerCard
                 seller={{
                   username:
-                    listing.sellerProfile.displayName ??
-                    listing.sellerProfile.publicId,
-                  avatarUrl: listing.sellerProfile.avatarUrl,
+                    listing.sellerProfile?.displayName ??
+                    listing.sellerProfile?.publicId ??
+                    "Unknown seller",
+                  avatarUrl: listing.sellerProfile?.avatarUrl,
                 }}
-                salesCount={listing.sellerProfile.soldCount ?? 0}
+                salesCount={listing.sellerProfile?.soldCount ?? 0}
                 onViewProfile={handleViewProfile}
               />
+
             </div>
           </div>
 
@@ -196,7 +196,6 @@ const ListingDetailPage = () => {
             <ProductInfo
               title={listing.title}
               price={listing.price}
-              onAddToCart={handleAddToCart}
               onMakeOffer={handleMakeOffer}
             />
 
@@ -223,7 +222,10 @@ const ListingDetailPage = () => {
             {/* CTA */}
             <div className="border-t mt-8 pt-6">
               <div className="w-full px-0">
-                <button className="w-full px-6 py-2 border border-primary text-primary rounded-lg font-medium hover:bg-primary/10">
+                <button 
+                  onClick={handleSellSimilar}
+                  className="w-full px-6 py-2 border border-primary text-primary rounded-lg font-medium hover:bg-primary/10">
+
                   Have a similar item? Sell yours
                 </button>
               </div>
@@ -232,7 +234,11 @@ const ListingDetailPage = () => {
         </div>
 
         {/* More from this seller */}
-        <SellerListings onSeeAll={handleSeeAllSellerItems} />
+        <SellerListings
+          sellerPublicId={listing.sellerProfile?.publicId}
+          currentListingPublicId={listing.publicId}
+          onSeeAll={handleSeeAllSellerItems}
+        />
       </div>
 
       {/* Offer Modal at the bottom */}

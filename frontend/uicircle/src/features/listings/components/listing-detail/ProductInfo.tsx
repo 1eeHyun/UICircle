@@ -11,7 +11,6 @@ interface ProductInfoProps {
 const ProductInfo: React.FC<ProductInfoProps> = ({
   title,
   price,
-  onAddToCart,
   onMakeOffer,
 }) => {
   return (
@@ -26,12 +25,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
 
       {/* Action Buttons */}
       <div className="flex gap-3 mb-6">
-        <button
-          onClick={onAddToCart}
-          className="flex-1 py-3 bg-gray-100 text-gray-900 rounded-lg font-bold hover:bg-gray-200"
-        >
-          Add to cart
-        </button>
         <button
           onClick={onMakeOffer}
           className="flex-1 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-light"
