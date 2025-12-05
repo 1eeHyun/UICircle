@@ -8,8 +8,8 @@ interface NotificationListProps {
   loading: boolean;
   hasMore: boolean;
   compact?: boolean;
-  onRead: (id: number) => void;
-  onDelete: (id: number) => void;
+  onRead: (id: string) => void;
+  onDelete: (id: string) => void;
   onLoadMore?: () => void;
   onItemClick?: (notification: NotificationResponse) => void;
   emptyMessage?: string;
@@ -51,7 +51,7 @@ export const NotificationList: React.FC<NotificationListProps> = ({
     <div className={`space-y-${compact ? "1" : "2"}`}>
       {notifications.map((notification) => (
         <NotificationItem
-          key={notification.notificationId}
+          key={notification.publicId}
           notification={notification}
           onRead={onRead}
           onDelete={onDelete}
