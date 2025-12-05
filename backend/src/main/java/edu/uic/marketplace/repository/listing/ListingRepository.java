@@ -139,11 +139,24 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     /**
      * Find listings by seller's public ID and status where not deleted (OPTIMIZED)
      */
-    @Query(value = "SELECT DISTINCT l FROM Listing l " +
-            "LEFT JOIN FETCH l.category " +
-            "LEFT JOIN FETCH l.images " +
-            "WHERE l.seller.publicId = :sellerPublicId AND l.status = :status AND l.deletedAt IS NULL",
-            countQuery = "SELECT COUNT(l) FROM Listing l WHERE l.seller.publicId = :sellerPublicId AND l.status = :status AND l.deletedAt IS NULL")
+    @Query(value = """
+        SELECT DISTINCT l FROM Listing l
+        LEFT JOIN FETCH l.category c
+        LEFT JOIN FETCH l.images imgs
+        JOIN l.seller s
+        JOIN s.profile p
+        WHERE p.publicId = :sellerPublicId
+          AND l.status = :status
+          AND l.deletedAt IS NULL
+        """,
+            countQuery = """
+        SELECT COUNT(l) FROM Listing l
+        JOIN l.seller s
+        JOIN s.profile p
+        WHERE p.publicId = :sellerPublicId
+          AND l.status = :status
+          AND l.deletedAt IS NULL
+        """)
     Page<Listing> findBySellerWithDetails(@Param("sellerPublicId") String sellerPublicId,
                                           @Param("status") ListingStatus status,
                                           Pageable pageable);

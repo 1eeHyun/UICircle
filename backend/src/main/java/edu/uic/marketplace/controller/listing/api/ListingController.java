@@ -14,6 +14,7 @@ import edu.uic.marketplace.service.listing.ListingService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/listings")
 @RequiredArgsConstructor
+@Slf4j
 public class ListingController implements ListingApiDocs {
 
     private final AuthValidator authValidator;
@@ -180,6 +182,8 @@ public class ListingController implements ListingApiDocs {
 
         PageResponse<ListingSummaryResponse> res =
                 listingService.getListingsBySeller(sellerPublicId, status, page, size);
+
+        log.info("res={}" + res);
 
         return ResponseEntity.ok(CommonResponse.success(res));
     }

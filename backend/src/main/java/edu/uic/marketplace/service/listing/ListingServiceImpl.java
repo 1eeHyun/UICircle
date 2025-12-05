@@ -22,8 +22,11 @@ import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,6 +41,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ListingServiceImpl implements ListingService {
 
     // repositories
@@ -362,7 +366,32 @@ public class ListingServiceImpl implements ListingService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ListingSummaryResponse> getListingsBySeller(String sellerUsername, ListingStatus status, int page, int size) {
-        return null;
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        ListingStatus effectiveStatus =
+                (status != null) ? status : ListingStatus.ACTIVE;
+
+        Page<Listing> listingPage =
+                listingRepository.findBySellerWithDetails(
+                        sellerUsername,
+                        effectiveStatus,
+                        pageable
+                );
+
+        List<ListingSummaryResponse> content = listingPage.getContent().stream()
+                .map(listing -> {
+                    boolean isFavorite = false;
+                    return ListingSummaryResponse.from(listing, isFavorite);
+                })
+                .toList();
+
+        log.info("by seller listings listingPage={}", listingPage);
+        return PageMapper.toPageResponse(listingPage, content);
     }
 
     @Override
