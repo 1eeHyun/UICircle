@@ -1,5 +1,5 @@
 // src/features/notification/pages/NotificationPage.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "@/features/notification/hooks/useNotifications";
 import { NotificationList } from "../components/ui/NotificationList";

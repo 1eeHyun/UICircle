@@ -1,5 +1,5 @@
 // src/features/notification/components/NotificationDropdown.tsx
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "@/features/notification/hooks/useNotifications";
 import { NotificationBell } from "./ui/NotificationBell";
