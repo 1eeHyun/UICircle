@@ -16,7 +16,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   return (
     <div>
       {/* Title & Price */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">{title}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4 break-words">
+        {title}
+      </h1>
+
       <div className="flex items-baseline gap-3 mb-6">
         <span className="text-3xl font-bold text-gray-900">
           {price === 0 ? "Free" : `$${price.toFixed(2)}`}

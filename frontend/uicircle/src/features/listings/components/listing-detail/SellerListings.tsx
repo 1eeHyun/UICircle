@@ -71,31 +71,31 @@ const SellerListings = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
         {items.map((item) => (
-          <button
+            <button
             key={item.publicId}
-            onClick={() => navigate(`/listing/${item.publicId}`)}
-            className="text-left border rounded-lg overflow-hidden hover:shadow-sm transition-shadow"
-          >
-            <div className="aspect-square bg-gray-100 overflow-hidden">
-              {item.thumbnailUrl && (
+            onClick={() => navigate(`/listings/${item.publicId}`)}
+            className="rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+            >
+            <div className="w-full aspect-square bg-gray-100 overflow-hidden">
+                {item.thumbnailUrl && (
                 <img
-                  src={item.thumbnailUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
+                    src={item.thumbnailUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-200 ease-out hover:scale-105"
                 />
-              )}
+                )}
             </div>
-            <div className="p-2">
-              <p className="text-sm font-medium line-clamp-2">{item.title}</p>
-              <p className="mt-1 text-sm font-bold">
+            <div className="p-1">
+                <p className="text-xs font-medium line-clamp-2">{item.title}</p>
+                <p className="mt-1 text-xs font-bold">
                 ${item.price.toLocaleString()}
-              </p>
+                </p>
             </div>
-          </button>
+            </button>
         ))}
-      </div>
+        </div>
     </div>
   );
 };

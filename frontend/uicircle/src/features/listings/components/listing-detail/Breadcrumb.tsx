@@ -16,12 +16,21 @@ const Breadcrumb = ({
       <button onClick={onHomeClick} className="hover:underline">
         UICircle
       </button>
+
       <span>&gt;</span>
+
       <button onClick={onCategoryClick} className="hover:underline">
         {categoryName}
       </button>
+
       <span>&gt;</span>
-      <span className="text-gray-900 truncate">{listingTitle}</span>
+
+      <span
+        className="text-gray-900 truncate break-words max-w-[20%] sm:max-w-[25%] md:max-w-[35%]"
+        title={listingTitle}
+      >
+        {listingTitle}
+      </span>
     </nav>
   );
 };
