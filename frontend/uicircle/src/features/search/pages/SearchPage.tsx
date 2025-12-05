@@ -136,7 +136,7 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface-light">
+    <div className="min-h-screen">
       <Navbar />
       <CategoryMenu categories={categories} />
       <SavedSearches onLoadSearch={handleLoadSavedSearch} />
