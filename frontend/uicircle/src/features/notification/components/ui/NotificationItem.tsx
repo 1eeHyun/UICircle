@@ -6,8 +6,8 @@ import { getNotificationIcon, formatNotificationType } from "../../utils/notific
 
 interface NotificationItemProps {
   notification: NotificationResponse;
-  onRead: (id: number) => void;
-  onDelete: (id: number) => void;
+  onRead: (publicId: string) => void;
+  onDelete: (publicId: string) => void;
   onClick?: (notification: NotificationResponse) => void;
   compact?: boolean;
 }
@@ -21,7 +21,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 }) => {
   const handleClick = () => {
     if (!notification.isRead) {
-      onRead(notification.notificationId);
+      onRead(notification.publicId);
     }
     if (onClick) {
       onClick(notification);
@@ -30,7 +30,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(notification.notificationId);
+    onDelete(notification.publicId);
   };
 
   const timeAgo = React.useMemo(() => {

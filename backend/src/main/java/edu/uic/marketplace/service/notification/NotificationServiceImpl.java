@@ -1,5 +1,16 @@
 package edu.uic.marketplace.service.notification;
 
+import java.time.Instant;
+import java.util.Locale;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.notification.NotificationResponse;
 import edu.uic.marketplace.model.notification.Notification;
@@ -9,16 +20,6 @@ import edu.uic.marketplace.repository.notification.NotificationRepository;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.Locale;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -228,6 +229,60 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationType.LISTING_FAVORITED,
                 "listing",
                 listingPublicId,
+                message
+        );
+    }
+
+    @Override
+    @Transactional
+    public void notifyNewFollower(String userUsername, String followerUsername) {
+
+        User user = authValidator.validateUserByUsername(userUsername);
+        User follower = authValidator.validateUserByUsername(followerUsername);
+
+        String message = follower.getUsername() + " started following you.";
+
+        createNotification(
+                user.getUsername(),
+                NotificationType.SYSTEM,
+                "profile",
+                follower.getPublicId(),
+                message
+        );
+    }
+
+    @Override
+    @Transactional
+    public void notifyFollowRequest(String userUsername, String followerUsername) {
+
+        User user = authValidator.validateUserByUsername(userUsername);
+        User follower = authValidator.validateUserByUsername(followerUsername);
+
+        String message = follower.getUsername() + " requested to follow you.";
+
+        createNotification(
+                user.getUsername(),
+                NotificationType.SYSTEM,
+                "profile",
+                follower.getPublicId(),
+                message
+        );
+    }
+
+    @Override
+    @Transactional
+    public void notifyFollowRequestAccepted(String followerUsername, String userUsername) {
+
+        User follower = authValidator.validateUserByUsername(followerUsername);
+        User user = authValidator.validateUserByUsername(userUsername);
+
+        String message = user.getUsername() + " accepted your follow request.";
+
+        createNotification(
+                follower.getUsername(),
+                NotificationType.SYSTEM,
+                "profile",
+                user.getPublicId(),
                 message
         );
     }

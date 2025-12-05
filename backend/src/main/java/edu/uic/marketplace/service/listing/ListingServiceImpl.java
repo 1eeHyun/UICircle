@@ -396,6 +396,14 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<ListingSummaryResponse> getListingsBySellerWithPrivacyCheck(
+            String sellerPublicId, String viewerUsername, ListingStatus status, int page, int size) {
+        // Privacy check removed - all listings are publicly viewable
+        return getListingsBySeller(sellerPublicId, status, page, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<ListingSummaryResponse> searchListings(SearchListingRequest request) {
 
         // Validate price range
@@ -530,7 +538,7 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     public Long getListingCountBySeller(String sellerUsername) {
-        User seller = authValidator.validateUserByUsername(sellerUsername);
+        authValidator.validateUserByUsername(sellerUsername);
         return listingRepository.countBySeller_UsernameAndDeletedAtIsNull(sellerUsername);
     }
 

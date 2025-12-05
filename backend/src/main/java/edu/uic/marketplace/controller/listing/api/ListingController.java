@@ -1,5 +1,20 @@
 package edu.uic.marketplace.controller.listing.api;
 
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import edu.uic.marketplace.controller.listing.docs.ListingApiDocs;
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
 import edu.uic.marketplace.dto.request.listing.NearbyListingRequest;
@@ -15,12 +30,6 @@ import edu.uic.marketplace.validator.auth.AuthValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/listings")
@@ -180,8 +189,16 @@ public class ListingController implements ListingApiDocs {
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "20") int size) {
 
+        // Get current viewer's username for privacy check
+        String viewerUsername = null;
+        try {
+            viewerUsername = authValidator.extractUsername();
+        } catch (Exception e) {
+            // Anonymous viewer - continue without username
+        }
+
         PageResponse<ListingSummaryResponse> res =
-                listingService.getListingsBySeller(sellerPublicId, status, page, size);
+                listingService.getListingsBySellerWithPrivacyCheck(sellerPublicId, viewerUsername, status, page, size);
 
         log.info("res={}" + res);
 

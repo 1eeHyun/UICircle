@@ -93,7 +93,7 @@ const Navbar: React.FC = () => {
                 {/* Dropdown menu */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 rounded-lg bg-background-light border border-border-light shadow-lg py-1 text-sm">
-                    {/* <button
+                    <button
                       type="button"
                       onClick={() => {
                         setShowUserMenu(false);
@@ -108,11 +108,22 @@ const Navbar: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setShowUserMenu(false);
-                        navigate("/my-listings");
+                        navigate("/profile?tab=listings");
                       }}
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-surface-light hover:text-primary transition-colors"
                     >
                       My Listings
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate("/offers");
+                      }}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-surface-light hover:text-primary transition-colors"
+                    >
+                      My Offers
                     </button>
 
                     <button
@@ -124,7 +135,18 @@ const Navbar: React.FC = () => {
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-surface-light hover:text-primary transition-colors"
                     >
                       Favorites
-                    </button> */}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate("/messages");
+                      }}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-surface-light hover:text-primary transition-colors"
+                    >
+                      Messages
+                    </button>
 
                     <hr className="my-1 border-border-light" />
 

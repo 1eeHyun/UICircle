@@ -1,5 +1,9 @@
 package edu.uic.marketplace.service.listing;
 
+import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import edu.uic.marketplace.dto.request.listing.CreateListingRequest;
 import edu.uic.marketplace.dto.request.listing.NearbyListingRequest;
 import edu.uic.marketplace.dto.request.listing.SearchListingRequest;
@@ -8,9 +12,6 @@ import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.listing.ListingResponse;
 import edu.uic.marketplace.dto.response.listing.ListingSummaryResponse;
 import edu.uic.marketplace.model.listing.ListingStatus;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 /**
  * Service interface for listing operations
@@ -135,6 +136,18 @@ public interface ListingService {
      */
     PageResponse<ListingSummaryResponse> getListingsBySeller(
             String sellerUsername, ListingStatus status, int page, int size);
+
+    /**
+     * Get listings by seller's public ID with privacy check
+     * @param sellerPublicId Seller's profile public ID
+     * @param viewerUsername Viewer's username (for privacy check)
+     * @param status Listing status filter (optional)
+     * @param page Page number
+     * @param size Page size
+     * @return Paginated listing summary responses, or empty if viewer cannot see
+     */
+    PageResponse<ListingSummaryResponse> getListingsBySellerWithPrivacyCheck(
+            String sellerPublicId, String viewerUsername, ListingStatus status, int page, int size);
 
     /**
      * Search listings by keyword

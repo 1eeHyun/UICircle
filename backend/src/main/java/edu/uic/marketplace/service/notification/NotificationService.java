@@ -1,11 +1,11 @@
 package edu.uic.marketplace.service.notification;
 
+import java.util.Optional;
+
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.notification.NotificationResponse;
 import edu.uic.marketplace.model.notification.Notification;
 import edu.uic.marketplace.model.notification.NotificationType;
-
-import java.util.Optional;
 
 /**
  * Notification management service interface
@@ -121,4 +121,25 @@ public interface NotificationService {
      * @param listingPublicId Offer status (accepted/rejected)
      */
     void notifyListingFavorited(String sellerUsername, String followerUsername, String listingPublicId);
+
+    /**
+     * Send notification for new follower (for public accounts)
+     * @param userUsername User who gained a follower
+     * @param followerUsername User who followed
+     */
+    void notifyNewFollower(String userUsername, String followerUsername);
+
+    /**
+     * Send notification for follow request (for private accounts)
+     * @param userUsername User who received the follow request
+     * @param followerUsername User who requested to follow
+     */
+    void notifyFollowRequest(String userUsername, String followerUsername);
+
+    /**
+     * Send notification when follow request is accepted
+     * @param followerUsername User who requested to follow (receiving notification)
+     * @param userUsername User who accepted the request
+     */
+    void notifyFollowRequestAccepted(String followerUsername, String userUsername);
 }

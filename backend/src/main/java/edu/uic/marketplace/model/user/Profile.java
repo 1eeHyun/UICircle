@@ -1,12 +1,26 @@
 package edu.uic.marketplace.model.user;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.Instant;
+import java.util.UUID;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-import java.util.UUID;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "profiles")
@@ -40,6 +54,9 @@ public class Profile {
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
+
+    @Column(name = "banner_url", length = 500)
+    private String bannerUrl;
 
     @Column(name = "bio", length = 500)
     private String bio;

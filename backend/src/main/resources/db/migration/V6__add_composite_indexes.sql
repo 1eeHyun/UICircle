@@ -24,8 +24,8 @@ ON listings(seller_id, status, deleted_at);
 -- Conversations
 -- ============================================
 
-CREATE INDEX idx_conversations_buyer_deleted_last
-ON conversations(buyer_id, buyer_deleted_at, last_message_at);
+CREATE INDEX idx_conversations_buyer_last_message
+ON conversations(buyer_id, last_message_at);
 
-CREATE INDEX idx_conversations_seller_deleted_last
-ON conversations(seller_id, seller_deleted_at, last_message_at);
+CREATE INDEX idx_conversations_seller_last_message
+ON conversations(seller_id, last_message_at);

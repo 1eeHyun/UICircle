@@ -29,21 +29,29 @@ export function useNotifications(initialPage = 0, pageSize = 10) {
       }
       setHasMore(!pageData.last);
       setPage(targetPage);
+    } catch (error) {
+      console.error("Failed to load notifications:", error);
+      // Don't crash the app, just log the error
     } finally {
       setLoading(false);
     }
   };
 
   const refreshUnreadCount = async () => {
-    const count = await getUnreadCount();
-    setUnreadCount(count);
+    try {
+      const count = await getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error("Failed to load unread count:", error);
+      // Don't crash the app, just log the error
+    }
   };
 
-  const handleMarkAsRead = async (id: number) => {
-    await markAsRead(id);
+  const handleMarkAsRead = async (publicId: string) => {
+    await markAsRead(publicId);
     setNotifications(prev =>
       prev.map(n =>
-        n.notificationId === id ? { ...n, isRead: true } : n
+        n.publicId === publicId ? { ...n, isRead: true } : n
       )
     );
     refreshUnreadCount();
@@ -55,10 +63,10 @@ export function useNotifications(initialPage = 0, pageSize = 10) {
     setUnreadCount(0);
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteNotification(id);
+  const handleDelete = async (publicId: string) => {
+    await deleteNotification(publicId);
     setNotifications(prev =>
-      prev.filter(n => n.notificationId !== id)
+      prev.filter(n => n.publicId !== publicId)
     );
     refreshUnreadCount();
   };

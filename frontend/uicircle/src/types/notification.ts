@@ -1,4 +1,5 @@
 export interface NotificationResponse {
+  publicId: string;
   notificationId: number;
   type: string;
   title: string;

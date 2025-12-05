@@ -7,12 +7,21 @@ import { SearchPage } from "../features/search/pages/SearchPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
+import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
+import NotificationPage from "@/features/notification/pages/NotificationPage";
+import OffersPage from "@/features/transaction/pages/OffersPage";
+import FavoritesPage from "@/features/listings/pages/FavoritesPage";
+import MessagesPage from "@/features/messages/pages/MessagesPage";
 
 const AppRouter = createBrowserRouter([
   {
     path: "/",
+    element: <LoginPage />,
+  },
+  {
+    path: "/login",
     element: <LoginPage />,
   },
   {
@@ -44,20 +53,19 @@ const AppRouter = createBrowserRouter([
     ),
   },
   {
-    
     path: "/listing/create",
     element: (
-    <ProtectedRoute>
-      <CreateListingPage/>
-    </ProtectedRoute>
+      <ProtectedRoute>
+        <CreateListingPage />
+      </ProtectedRoute>
     ),
   },
   {
     path: "/listings/:listingId",
     element: (
-    <ProtectedRoute>
-      <ListingDetailPage/>
-    </ProtectedRoute>
+      <ProtectedRoute>
+        <ListingDetailPage />
+      </ProtectedRoute>
     ),
   },
   {
@@ -66,7 +74,63 @@ const AppRouter = createBrowserRouter([
       <ProtectedRoute>
         <SearchPage />
       </ProtectedRoute>
-    )
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/profile/:publicId",
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/notifications",
+    element: (
+      <ProtectedRoute>
+        <NotificationPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/offers",
+    element: (
+      <ProtectedRoute>
+        <OffersPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/favorites",
+    element: (
+      <ProtectedRoute>
+        <FavoritesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/messages",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/messages/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
+      </ProtectedRoute>
+    ),
   },
 ]);
 

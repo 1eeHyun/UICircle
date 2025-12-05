@@ -15,7 +15,7 @@ export const NOTIFICATION_ROUTES = {
   },
   MARK_AS_READ: {
     method: "PATCH",
-    url: (notificationId: number | string) => `/notifications/${notificationId}/read`,
+    url: (publicId: string) => `/notifications/${publicId}/read`,
   },
   MARK_ALL_AS_READ: {
     method: "PATCH",
@@ -23,7 +23,7 @@ export const NOTIFICATION_ROUTES = {
   },
   DELETE_ONE: {
     method: "DELETE",
-    url: (notificationId: number | string) => `/notifications/${notificationId}`,
+    url: (publicId: string) => `/notifications/${publicId}`,
   },
   DELETE_ALL: {
     method: "DELETE",
