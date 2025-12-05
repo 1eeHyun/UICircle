@@ -6,35 +6,31 @@ interface CategoryMenuProps {
   categories: CategoryResponse[];
 }
 
+const normalizeSlug = (slug: string) =>
+  slug.trim().replace(/\s+/g, "-");
+
 const CategoryMenu = ({ categories }: CategoryMenuProps) => {
-  // Currently active (hovered / clicked) parent category
   const [activeParentSlug, setActiveParentSlug] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Find active parent category object
   const activeParent = categories.find(
-    (c) => c.categorySlug === activeParentSlug
+    (c) => normalizeSlug(c.categorySlug) === activeParentSlug
   );
 
-  // Only subcategories navigate
   const handleSubcategoryClick = (slug: string) => {
-    navigate(`/category/${slug}`);
+    navigate(`/category/${normalizeSlug(slug)}`);
   };
 
   return (
-    // Whole block: top tabs + bottom panel
-    <div
-      className="bg-background-light border-b border-border-light"
-      onMouseLeave={() => setActiveParentSlug(null)}
-    >
-      {/* Top-level category tabs (like Mercari nav) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center gap-4 py-3 overflow-x-auto scrollbar-hide">
+    <div className="border-b" onMouseLeave={() => setActiveParentSlug(null)}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex justify-center gap-14 pt-4 pb-2 overflow-x-auto scrollbar-hide">
           {categories.map((category) => {
             const hasChildren =
               Array.isArray(category.children) && category.children.length > 0;
             const isActive = activeParentSlug === category.categorySlug;
-
+            
+            const displayName = category.name.split("&")[0].trim();
             return (
               <button
                 key={category.categorySlug}
@@ -43,7 +39,6 @@ const CategoryMenu = ({ categories }: CategoryMenuProps) => {
                   if (hasChildren) setActiveParentSlug(category.categorySlug);
                 }}
                 onClick={() => {
-                  // Parent just toggles active state, never navigates
                   if (hasChildren) {
                     setActiveParentSlug((prev) =>
                       prev === category.categorySlug ? null : category.categorySlug
@@ -51,55 +46,37 @@ const CategoryMenu = ({ categories }: CategoryMenuProps) => {
                   }
                 }}
                 className={`whitespace-nowrap border-b-2 pb-2 transition
-                  text-sm md:text-sm font-medium
+                  text-sm md:text-sm
                   ${
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-gray-700 hover:text-primary hover:border-primary/40"
                   }`}
               >
-                {category.name}
+                {displayName}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Bottom mega menu panel (full width under tabs) */}
       {activeParent &&
         activeParent.children &&
         activeParent.children.length > 0 && (
-          <div className="border-t border-border-light bg-background-light shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+          <div className="border-t">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              {/* Title like "Video Games & Consoles" */}
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-                {activeParent.name}
-              </h3>
-
-              {/* Left column: vertical list of subcategories */}
               <ul className="space-y-2">
                 {activeParent.children.map((sub) => (
-                  <li key={sub.categorySlug}>
+                  <li key={normalizeSlug(sub.categorySlug)}>
                     <button
                       type="button"
                       onClick={() => handleSubcategoryClick(sub.categorySlug)}
-                      className="text-sm md:text-base text-gray-700 hover:text-primary transition"
+                      className="text-sm md:text-sm text-gray-700 hover:text-primary transition"
                     >
                       {sub.name}
                     </button>
                   </li>
                 ))}
-
-                {/* Optional: "View all" like Mercari */}
-                {/* <li className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSubcategoryClick(activeParent.categorySlug)}
-                    className="text-sm font-semibold text-gray-900 hover:text-primary transition"
-                  >
-                    View all
-                  </button>
-                </li> */}
               </ul>
             </div>
           </div>
