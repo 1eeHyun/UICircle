@@ -46,28 +46,16 @@ public class ConversationServiceImpl implements ConversationService {
         // 2) Validate listing
         Listing listing = listingValidator.validateListingByPublicId(request.getListingPublicId());
 
+        User seller = listing.getSeller();
+
         // 3) Prevent seller from starting conversation on their own listing
-        if (listing.getSeller().getUserId().equals(user.getUserId())) {
+        if (seller.getUserId().equals(user.getUserId())) {
             throw new IllegalStateException("You cannot start a conversation on your own listing.");
         }
 
         User buyer = user;
-        User seller = listing.getSeller();
 
-        // 4) Check if a conversation already exists between this buyer and seller for this listing
-        Optional<Conversation> existing = conversationRepository
-                .findByListing_PublicIdAndBuyer_UsernameAndSeller_Username(
-                        listing.getPublicId(),
-                        buyer.getUsername(),
-                        seller.getUsername()
-                );
-
-        if (existing.isPresent()) {
-            // If conversation already exists, just return it for the current user
-            return ConversationResponse.fromForUser(existing.get(), user);
-        }
-
-        // 5) Create a new conversation
+        // 4) Create a new conversation
         Conversation conversation = Conversation.builder()
                 .listing(listing)
                 .buyer(buyer)
@@ -78,9 +66,6 @@ public class ConversationServiceImpl implements ConversationService {
                 .build();
 
         Conversation saved = conversationRepository.save(conversation);
-
-        // (Optional) If you want to send an initial message here,
-        // call MessageService.sendMessage(...) instead of leaving it to frontend.
 
         return ConversationResponse.fromForUser(saved, user);
     }
@@ -151,19 +136,16 @@ public class ConversationServiceImpl implements ConversationService {
         final Map<String, Message> finalLastMessagesMap = lastMessagesMap;
         Page<ConversationResponse> dtoPage = conversations.map(conv -> {
 
-            // Determine the other participant (already loaded via JOIN FETCH)
             User other = conv.getSeller().getUserId().equals(currentUserId)
                     ? conv.getBuyer()
                     : conv.getSeller();
 
-            // Determine unread count for current user
             int unread = conv.getSeller().getUserId().equals(currentUserId)
                     ? conv.getSellerUnreadCount()
                     : conv.getBuyerUnreadCount();
 
-            // Get last message from our batch-fetched map
             Message lastMessage = finalLastMessagesMap.get(conv.getPublicId());
-            MessageResponse lastMessageDto = lastMessage != null
+            MessageResponse lastMessageDto = (lastMessage != null)
                     ? MessageResponse.from(lastMessage)
                     : null;
 
@@ -174,31 +156,30 @@ public class ConversationServiceImpl implements ConversationService {
                     unread
             );
         });
-
         return PageResponse.fromPage(dtoPage);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Conversation> findByListingAndUsers(
-            String listingPublicId,
-            String username1,
-            String username2
-    ) {
-        Optional<Conversation> conv = conversationRepository
-                .findByListing_PublicIdAndBuyer_UsernameAndSeller_Username(
-                        listingPublicId, username1, username2
-                );
-
-        if (conv.isPresent()) {
-            return conv;
-        }
-
-        return conversationRepository
-                .findByListing_PublicIdAndBuyer_UsernameAndSeller_Username(
-                        listingPublicId, username2, username1
-                );
-    }
+//    @Override
+//    @Transactional(readOnly = true)
+//    public Optional<Conversation> findByListingAndUsers(
+//            String listingPublicId,
+//            String username1,
+//            String username2
+//    ) {
+//        Optional<Conversation> conv = conversationRepository
+//                .findByListing_PublicIdAndBuyer_UsernameAndSeller_Username(
+//                        listingPublicId, username1, username2
+//                );
+//
+//        if (conv.isPresent()) {
+//            return conv;
+//        }
+//
+//        return conversationRepository
+//                .findByListing_PublicIdAndBuyer_UsernameAndSeller_Username(
+//                        listingPublicId, username2, username1
+//                );
+//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -230,5 +211,27 @@ public class ConversationServiceImpl implements ConversationService {
         // if (conversation.getSellerDeletedAt() != null && conversation.getBuyerDeletedAt() != null) {
         //     conversationRepository.delete(conversation);
         // }
+    }
+
+    @Override
+    @Transactional
+    public Conversation createConversationForOffer(Listing listing, User buyer) {
+
+        User seller = listing.getSeller();
+
+        if (seller.getUserId().equals(buyer.getUserId())) {
+            throw new IllegalStateException("Seller and buyer cannot be the same user.");
+        }
+
+        Conversation conversation = Conversation.builder()
+                .listing(listing)
+                .buyer(buyer)
+                .seller(seller)
+                .sellerUnreadCount(0)
+                .buyerUnreadCount(0)
+                .lastMessageAt(Instant.now())
+                .build();
+
+        return conversationRepository.save(conversation);
     }
 }

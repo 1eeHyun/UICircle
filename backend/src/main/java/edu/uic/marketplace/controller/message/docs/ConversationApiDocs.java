@@ -1,6 +1,5 @@
 package edu.uic.marketplace.controller.message.docs;
 
-import edu.uic.marketplace.dto.request.message.CreateConversationRequest;
 import edu.uic.marketplace.dto.response.common.CommonResponse;
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.message.ConversationResponse;
@@ -8,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -21,31 +19,31 @@ public interface ConversationApiDocs {
 
     // ---------------------- Create Conversation ----------------------
 
-    @Operation(
-            summary = "Create a conversation for a listing",
-            description = """
-                    Creates a new conversation between the authenticated user (buyer) 
-                    and the listing owner (seller). If a conversation already exists 
-                    for this listing and user pair, the existing conversation is returned.
-                    """,
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Conversation created or existing conversation returned",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(implementation = ConversationResponse.class)
-                            )
-                    )
-            }
-    )
-    ResponseEntity<CommonResponse<ConversationResponse>> createConversation(
-            @RequestBody(
-                    description = "Conversation creation payload containing the target listing ID and optional initial message",
-                    required = true
-            )
-            CreateConversationRequest request
-    );
+//    @Operation(
+//            summary = "Create a conversation for a listing",
+//            description = """
+//                    Creates a new conversation between the authenticated user (buyer)
+//                    and the listing owner (seller). If a conversation already exists
+//                    for this listing and user pair, the existing conversation is returned.
+//                    """,
+//            responses = {
+//                    @ApiResponse(
+//                            responseCode = "200",
+//                            description = "Conversation created or existing conversation returned",
+//                            content = @Content(
+//                                    mediaType = "application/json",
+//                                    schema = @Schema(implementation = ConversationResponse.class)
+//                            )
+//                    )
+//            }
+//    )
+//    ResponseEntity<CommonResponse<ConversationResponse>> createConversation(
+//            @RequestBody(
+//                    description = "Conversation creation payload containing the target listing ID and optional initial message",
+//                    required = true
+//            )
+//            CreateConversationRequest request
+//    );
 
     // ---------------------- Get Conversation List ----------------------
 

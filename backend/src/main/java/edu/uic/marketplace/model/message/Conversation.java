@@ -136,4 +136,16 @@ public class Conversation {
             incrementUnreadCountForBuyer();
         }
     }
+
+    public void decrementUnreadCountForUser(Long userId) {
+        if (seller.getUserId().equals(userId)) {
+            if (sellerUnreadCount != null && sellerUnreadCount > 0) {
+                sellerUnreadCount--;
+            }
+        } else if (buyer.getUserId().equals(userId)) {
+            if (buyerUnreadCount != null && buyerUnreadCount > 0) {
+                buyerUnreadCount--;
+            }
+        }
+    }
 }

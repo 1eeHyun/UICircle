@@ -3,7 +3,9 @@ package edu.uic.marketplace.service.message;
 import edu.uic.marketplace.dto.request.message.CreateConversationRequest;
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.message.ConversationResponse;
+import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.message.Conversation;
+import edu.uic.marketplace.model.user.User;
 
 import java.util.Optional;
 
@@ -38,14 +40,14 @@ public interface ConversationService {
      */
     PageResponse<ConversationResponse> getConversations(String username, Integer page, Integer size);
     
-    /**
-     * Get conversation between two users for a listing
-     * @param listingPublicId Listing ID
-     * @param username1 First username
-     * @param username2 Second username
-     * @return Conversation if exists
-     */
-    Optional<Conversation> findByListingAndUsers(String listingPublicId, String username1, String username2);
+//    /**
+//     * Get conversation between two users for a listing
+//     * @param listingPublicId Listing ID
+//     * @param username1 First username
+//     * @param username2 Second username
+//     * @return Conversation if exists
+//     */
+//    Optional<Conversation> findByListingAndUsers(String listingPublicId, String username1, String username2);
 
 
     /**
@@ -56,4 +58,6 @@ public interface ConversationService {
     Long getUnreadConversationCount(String username);
 
     void leaveConversation(String conversationPublicId, String username);
+
+    Conversation createConversationForOffer(Listing listing, User buyer);
 }
