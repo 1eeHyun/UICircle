@@ -42,6 +42,9 @@ public class User {
     @Column(name = "public_id", unique = true, nullable = false, updatable = false, length = 36)
     private String publicId;
 
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private Profile profile;
+
     @Column(unique = true, nullable = false, length = 50)
     private String username;
 
