@@ -69,7 +69,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<NotificationResponse> results = notificationRepository
-                .findByUser_UsernameOrderByCreatedAtDesc(username, pageable)
+                .findByUser_UsernameOrderByCreatedAtDescOptimized(username, pageable)
                 .map(NotificationResponse::from);
 
         return PageResponse.fromPage(results);
@@ -81,7 +81,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<NotificationResponse> results = notificationRepository
-                .findByUser_UsernameAndReadAtIsNullOrderByCreatedAtDesc(username, pageable)
+                .findByUser_UsernameAndReadAtIsNullOrderByCreatedAtDescOptimized(username, pageable)
                 .map(NotificationResponse::from);
 
         return PageResponse.fromPage(results);

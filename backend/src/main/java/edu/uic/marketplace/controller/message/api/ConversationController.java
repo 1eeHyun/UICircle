@@ -1,7 +1,6 @@
 package edu.uic.marketplace.controller.message.api;
 
 import edu.uic.marketplace.controller.message.docs.ConversationApiDocs;
-import edu.uic.marketplace.dto.request.message.CreateConversationRequest;
 import edu.uic.marketplace.dto.response.common.CommonResponse;
 import edu.uic.marketplace.dto.response.common.PageResponse;
 import edu.uic.marketplace.dto.response.message.ConversationResponse;
@@ -19,17 +18,17 @@ public class ConversationController implements ConversationApiDocs {
     private final ConversationService conversationService;
     private final AuthValidator authValidator;
 
-    @Override
-    @PostMapping
-    public ResponseEntity<CommonResponse<ConversationResponse>> createConversation(
-            @RequestBody CreateConversationRequest request) {
-
-        String username = authValidator.extractUsername();
-
-        ConversationResponse res = conversationService.createConversation(username, request);
-
-        return ResponseEntity.ok(CommonResponse.success(res));
-    }
+//    @Override
+//    @PostMapping
+//    public ResponseEntity<CommonResponse<ConversationResponse>> createConversation(
+//            @RequestBody CreateConversationRequest request) {
+//
+//        String username = authValidator.extractUsername();
+//
+//        ConversationResponse res = conversationService.createConversation(username, request);
+//
+//        return ResponseEntity.ok(CommonResponse.success(res));
+//    }
 
     @Override
     @GetMapping

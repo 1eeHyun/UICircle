@@ -8,6 +8,7 @@ import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.ListingStatus;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.listing.FavoriteRepository;
+import edu.uic.marketplace.service.notification.NotificationService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,8 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final AuthValidator authValidator;
     private final ListingValidator listingValidator;
 
+    private final NotificationService notificationService;
+
     @Override
     @Transactional
     public void toggleFavorite(String username, String listingPublicId) {
@@ -48,14 +51,28 @@ public class FavoriteServiceImpl implements FavoriteService {
         }
 
         // 3) add
+        Favorite.FavoriteId id = new Favorite.FavoriteId(
+                user.getUserId(),
+                listing.getListingId()
+        );
+
         Favorite fav = Favorite.builder()
+                .id(id)
                 .user(user)
                 .listing(listing)
                 .build();
+
         favoriteRepository.save(fav);
         listing.incrementFavoriteCount();
 
-        // 4) TODO: notification
+        // 4) Send notification to seller
+        if (user != listing.getSeller()) {
+            notificationService.notifyListingFavorited(
+                    listing.getSeller().getUsername(),
+                    username,
+                    listing.getPublicId()
+            );
+        }
     }
 
     @Override
@@ -78,14 +95,17 @@ public class FavoriteServiceImpl implements FavoriteService {
         int p = (page == null || page < 0) ? 0 : page;
         int s = (size == null || size <= 0) ? 20 : size;
 
-        Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "favoritedAt"));
 
-        Page<Favorite> favPage = favoriteRepository.findByUser_Username(user.getUsername(), pageable);
+        Page<Favorite> favPage = favoriteRepository.findActiveFavoritesByUsername(
+                user.getUsername(),
+                ListingStatus.ACTIVE,
+                pageable
+        );
 
-        List<ListingSummaryResponse> content = favPage.getContent().stream()
+        var content = favPage.getContent().stream()
                 .map(Favorite::getListing)
-                .filter(l -> l.getDeletedAt() == null && l.getStatus() == ListingStatus.ACTIVE)
-                .map(l -> ListingSummaryResponse.from(l, true))
+                .map(listing -> ListingSummaryResponse.from(listing, true))
                 .toList();
 
         return PageMapper.toPageResponse(favPage, content);
@@ -102,10 +122,8 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Override
     public List<String> getUserFavoriteListingPublicIds(String username) {
 
-        User user = authValidator.validateUserByUsername(username);
-        return favoriteRepository.findByUser(user).stream()
-                .map(fav -> fav.getListing().getPublicId())
-                .toList();
+        authValidator.validateUserByUsername(username);
+        return favoriteRepository.findListingIdsByUser_Username(username);
     }
 
     @Override
@@ -120,5 +138,11 @@ public class FavoriteServiceImpl implements FavoriteService {
         );
 
         return favoritedIds.stream().collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isFavoritedWithIds(Long userId, Long listingId) {
+        return favoriteRepository.existsById_UserIdAndId_ListingId(userId, listingId);
     }
 }

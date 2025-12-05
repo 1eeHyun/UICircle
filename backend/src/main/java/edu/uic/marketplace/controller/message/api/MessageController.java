@@ -22,7 +22,7 @@ public class MessageController implements MessageApiDocs {
     @Override
     @PostMapping("/{conversationId}")
     public ResponseEntity<CommonResponse<MessageResponse>> sendMessage(
-            @RequestParam(name = "conversationId", required = true) String conversationId,
+            @PathVariable(name = "conversationId") String conversationId,
             @RequestBody SendMessageRequest request) {
 
         String username = authValidator.extractUsername();

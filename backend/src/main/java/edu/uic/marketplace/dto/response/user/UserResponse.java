@@ -14,7 +14,7 @@ import java.time.Instant;
 @Builder
 public class UserResponse {
 
-    private Long userId;
+    private String publicId;
     private String username;
     private String email;
     private String name;
@@ -26,7 +26,7 @@ public class UserResponse {
 
     public static UserResponse from(User user) {
         return UserResponse.builder()
-                .userId(user.getUserId())
+                .publicId(user.getPublicId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .name(user.getFullName())

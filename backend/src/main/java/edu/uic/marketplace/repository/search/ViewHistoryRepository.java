@@ -144,4 +144,6 @@ public interface ViewHistoryRepository extends JpaRepository<ViewHistory, Long> 
     void updateViewedAt(@Param("username") String username,
                         @Param("listingPublicId") String listingPublicId,
                         @Param("viewedAt") Instant viewedAt);
+
+    Optional<ViewHistory> findById_UserIdAndId_ListingId(Long userId, Long listingId);
 }

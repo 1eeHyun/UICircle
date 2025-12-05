@@ -68,7 +68,6 @@ public class MessageServiceImpl implements MessageService {
         // 7) Update conversation unread counts & last message timestamp
         conversation.updateLastMessageAt();
         conversation.incrementUnreadCountForUser(receiver.getUserId());
-        conversationRepository.save(conversation);
 
         // 8) Notification
         notificationService.notifyNewMessage(
@@ -112,6 +111,9 @@ public class MessageServiceImpl implements MessageService {
         conversationValidator.validateParticipant(conversation, user);
 
         // 4) Paging
+        int pageNumber = (page == null || page < 0) ? 0 : page;
+        int pageSize = (size == null || size <= 0) ? 20 : size;
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         Page<MessageResponse> pageResult = messageRepository
@@ -144,7 +146,7 @@ public class MessageServiceImpl implements MessageService {
         // 5) Idempotent: already read → skip
         if (message.isUnread()) {
             message.markAsRead();
-            messageRepository.save(message);
+            conversation.decrementUnreadCountForUser(user.getUserId());
         }
     }
 
@@ -163,7 +165,6 @@ public class MessageServiceImpl implements MessageService {
 
         // 4) Reset unread counters in conversation
         conversation.resetUnreadCountForUser(user.getUserId());
-        conversationRepository.save(conversation);
 
         // 5) Mark all messages as read in DB
         messageRepository.markAllAsReadInConversation(conversationPublicId, username);
@@ -187,7 +188,6 @@ public class MessageServiceImpl implements MessageService {
         // 4) Soft delete
         if (!message.isDeleted()) {
             message.softDelete();
-            messageRepository.save(message);
         }
     }
 

@@ -22,8 +22,11 @@ import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.CategoryValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -38,6 +41,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ListingServiceImpl implements ListingService {
 
     // repositories
@@ -238,27 +242,27 @@ public class ListingServiceImpl implements ListingService {
     @Transactional
     public ListingResponse getListingByPublicId(String publicId, String username) {
 
-        // 1) Fetch listing with all details
+        // 1) listing with details
         Listing listing = listingRepository.findActiveByPublicIdWithDetails(publicId)
                 .orElseThrow(() -> new IllegalArgumentException("Listing not found or not active"));
 
-        // 2) Get user
-        User user = authValidator.validateUserByUsername(username);
+        // 2) viewer user
+        User viewer = authValidator.validateUserByUsername(username);
+        User seller = listing.getSeller();
 
-        // 3) Check for block relationship (bidirectional)
-        String sellerUsername = listing.getSeller().getUsername();
-        if (blockService.isBlocked(username, sellerUsername)) {
+        // 3) block check
+        if (blockService.isBlockedWithIds(viewer.getUserId(), seller.getUserId())) {
             throw new IllegalArgumentException("Cannot view listing due to block relationship");
         }
 
-        // 4) Check if favorited
-        boolean isFavorite = favoriteService.isFavorited(username, publicId);
+        // 4) favorite check
+        boolean isFavorite = favoriteService.isFavoritedWithIds(viewer.getUserId(), listing.getListingId());
 
-        // 5) Increment view count asynchronously (only if not seller)
-        incrementViewCountIfNotSellerAsync(publicId, user.getUserId());
+        // 5) view count
+        listingRepository.incrementViewCountIfNotSeller(publicId, viewer.getUserId());
 
-        // 6) Record view history
-        viewHistoryService.recordView(username, publicId);
+        // 6) view history
+        viewHistoryService.recordViewWithEntities(viewer, listing);
 
         return ListingResponse.from(listing, isFavorite);
     }
@@ -362,7 +366,32 @@ public class ListingServiceImpl implements ListingService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ListingSummaryResponse> getListingsBySeller(String sellerUsername, ListingStatus status, int page, int size) {
-        return null;
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        ListingStatus effectiveStatus =
+                (status != null) ? status : ListingStatus.ACTIVE;
+
+        Page<Listing> listingPage =
+                listingRepository.findBySellerWithDetails(
+                        sellerUsername,
+                        effectiveStatus,
+                        pageable
+                );
+
+        List<ListingSummaryResponse> content = listingPage.getContent().stream()
+                .map(listing -> {
+                    boolean isFavorite = false;
+                    return ListingSummaryResponse.from(listing, isFavorite);
+                })
+                .toList();
+
+        log.info("by seller listings listingPage={}", listingPage);
+        return PageMapper.toPageResponse(listingPage, content);
     }
 
     @Override

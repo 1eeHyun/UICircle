@@ -1,13 +1,17 @@
 package edu.uic.marketplace.service.transaction;
 
+import edu.uic.marketplace.dto.request.message.SendMessageRequest;
 import edu.uic.marketplace.dto.request.transaction.CreateOfferRequest;
 import edu.uic.marketplace.dto.request.transaction.UpdateOfferStatusRequest;
 import edu.uic.marketplace.dto.response.transaction.PriceOfferResponse;
 import edu.uic.marketplace.model.listing.Listing;
 import edu.uic.marketplace.model.listing.OfferStatus;
+import edu.uic.marketplace.model.message.Conversation;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.transaction.PriceOfferRepository;
+import edu.uic.marketplace.service.message.ConversationService;
+import edu.uic.marketplace.service.message.MessageService;
 import edu.uic.marketplace.service.notification.NotificationService;
 import edu.uic.marketplace.validator.auth.AuthValidator;
 import edu.uic.marketplace.validator.listing.ListingValidator;
@@ -31,6 +35,10 @@ public class PriceOfferServiceImpl implements PriceOfferService {
     private final PriceOfferRepository priceOfferRepository;
 
     private final NotificationService notificationService;
+
+    private final ConversationService conversationService;
+    private final MessageService messageService;
+
 
     // ==================== create offer ====================
 
@@ -57,9 +65,12 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         }
 
         // 4) Check if buyer already has a pending offer for this listing
-        boolean pendingExists = priceOfferRepository.existsByBuyer_UsernameAndListing_PublicIdAndStatus(
-                buyerUsername, listingPublicId, OfferStatus.PENDING
-        );
+        boolean pendingExists = priceOfferRepository
+                .existsByBuyer_UsernameAndListing_PublicIdAndStatus(
+                        buyerUsername,
+                        listingPublicId,
+                        OfferStatus.PENDING
+                );
 
         if (pendingExists) {
             throw new IllegalStateException("You already have a pending offer for this listing.");
@@ -117,22 +128,39 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         offer.setMessage(request.getNote()); // seller note
 
         Listing listing = offer.getListing();
+        User buyer = offer.getBuyer();
 
         // 7) Auto-reject all other pending offers
         autoRejectOtherOffers(listing.getPublicId(), offer.getPublicId());
 
         // 8) Send notification to buyer
         notificationService.notifyOfferStatusChange(
-                offer.getBuyer().getUsername(),   // buyerUsername
+                buyer.getUsername(),              // buyerUsername
                 listing.getPublicId(),            // listingPublicId
                 "ACCEPTED"                        // status
         );
 
-        // 9) Return response
+        // 9) Create conversation for this accepted offer
+        Conversation conversation = conversationService.createConversationForOffer(listing, buyer);
+
+        // 10) Create first message in conversation (seller -> buyer)
+        String initialMessageBody = buildAcceptedOfferMessage(offer, request);
+
+        SendMessageRequest messageRequest = new SendMessageRequest();
+        messageRequest.setBody(initialMessageBody);
+
+        messageService.sendMessage(
+                conversation.getPublicId(),
+                seller.getUsername(),
+                messageRequest
+        );
+
+        // 11) Return response
         return PriceOfferResponse.from(offer);
     }
 
     // ==================== reject offer (seller) ====================
+
     @Override
     @Transactional
     public PriceOfferResponse rejectOffer(String offerPublicId, String sellerUsername, UpdateOfferStatusRequest request) {
@@ -328,5 +356,20 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         // @Transactional + dirty checking → auto flush
     }
 
-    // ----------------- helper methods -----------------
+    // ==================== helpers ====================
+
+    private String buildAcceptedOfferMessage(PriceOffer offer, UpdateOfferStatusRequest request) {
+
+        String note = request.getNote();
+        if (note != null && !note.isBlank()) {
+            return note;
+        }
+
+        String title = offer.getListing().getTitle();
+        String amountStr = offer.getAmount() != null
+                ? offer.getAmount().toPlainString()
+                : "";
+
+        return "Your offer of $" + amountStr + " for \"" + title + "\" has been accepted.";
+    }
 }

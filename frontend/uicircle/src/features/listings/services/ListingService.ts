@@ -10,13 +10,17 @@ export interface CategoryResponse {
 export interface ListingSummaryResponse {
   publicId: string;
   title: string;
-  description: string;
   price: number;
+  condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
   status: string;
+  categoryName?: string;
+  description?: string;
+  sellerUsername?: string;
+  thumbnailUrl: string | null;
+  viewCount: number;
+  favoriteCount: number;
+  isFavorite: boolean;
   createdAt: string;
-  thumbnailUrl?: string;
-  categoryName: string;
-  sellerUsername: string;
 }
 
 export interface PageResponse<T> {
@@ -35,8 +39,18 @@ export interface CreateListingRequest {
   categorySlug: string;
   latitude: number;
   longitude: number;
-
 }
+
+export interface ProfileResponse {
+  publicId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  major: string | null;
+  soldCount: number;
+  buyCount: number;
+}
+
 export interface ListingResponse {
   publicId: string;
   title: string;
@@ -44,9 +58,7 @@ export interface ListingResponse {
   price: number;
   condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
   status: string;
-  seller: {
-    username: string;
-  };
+  sellerProfile: ProfileResponse;
   category: {
     categorySlug: string;
     name: string;
@@ -151,3 +163,72 @@ export const getListing = async (listingId: string) => {
   return response.data.data;
 };
 
+export const toggleFavorite = async (publicId: string) => {
+  const res = await instance.post<{ success: boolean }>(
+    `/listings/favorites/toggle`,
+    null,
+    { params: { publicId } }
+  );
+  return res.data.success;
+};
+
+export const getFavoriteCount = async (publicId: string) => {
+  const res = await instance.get<{ success: boolean; data: number }>(
+    `/listings/favorites/count`,
+    { params: { publicId } }
+  );
+  return res.data.data;
+};
+
+export const getSellerListingsBySeller = async (
+  sellerPublicId: string,
+  page = 0,
+  size = 6,
+  status?: string
+): Promise<PageResponse<ListingSummaryResponse>> => {
+  const params: Record<string, any> = {
+    sellerPublicId,
+    page,
+    size,
+  };
+
+  if (status) {
+    params.status = status;
+  }
+
+  const res = await instance.get<{
+    success: boolean;
+    data: PageResponse<ListingSummaryResponse>;
+  }>("/listings/seller/list", {
+    params,
+  });
+
+  return res.data.data;
+};
+
+export const getMyFavoriteListings = async () => {
+  const response = await instance.get<{
+    success: boolean;
+    data: PageResponse<ListingSummaryResponse>;
+  }>("/listings/favorites/me");
+
+  return response.data.data.content; // ListingSummaryResponse[]
+};
+
+export interface NearbyListingRequest {
+  latitude: number;
+  longitude: number;
+  radiusMiles: number;
+  categorySlug?: string;
+}
+
+export const getNearbyListings = async (
+  request: NearbyListingRequest
+): Promise<ListingSummaryResponse[]> => {
+  const res = await instance.post<{
+    success: boolean;
+    data: ListingSummaryResponse[];
+  }>("/listings/nearby", request);
+
+  return res.data.data;
+};

@@ -76,12 +76,6 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BlockResponse> getBlockers(String username) {
-        return null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public boolean isBlocked(String blockerUsername, String blockedUsername) {
 
         User blocker = authValidator.validateUserByUsername(blockerUsername);
@@ -106,5 +100,12 @@ public class BlockServiceImpl implements BlockService {
         allBlocked.addAll(blockers);
 
         return new ArrayList<>(allBlocked);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isBlockedWithIds(Long blockerId, Long blockedId) {
+        if (blockerId.equals(blockedId)) return false;
+        return blockRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId);
     }
 }

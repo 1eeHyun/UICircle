@@ -41,10 +41,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public List<CategoryResponse> getTopLevelCategories() {
 
-        List<Category> roots = categoryRepository.findByParentIsNull();
+        List<Category> roots = categoryRepository.findRootCategories();
 
         return roots.stream()
-                .sorted(Comparator.comparing(Category::getName, String.CASE_INSENSITIVE_ORDER))
                 .map(CategoryResponse::from)
                 .toList();
     }

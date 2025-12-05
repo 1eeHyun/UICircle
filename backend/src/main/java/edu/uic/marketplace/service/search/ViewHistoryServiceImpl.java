@@ -66,6 +66,34 @@ public class ViewHistoryServiceImpl implements ViewHistoryService {
     }
 
     @Override
+    @Transactional
+    public ViewHistory recordViewWithEntities(User user, Listing listing) {
+
+        Optional<ViewHistory> existingView =
+                viewHistoryRepository.findById_UserIdAndId_ListingId(user.getUserId(), listing.getListingId());
+
+        if (existingView.isPresent()) {
+            ViewHistory vh = existingView.get();
+            vh.updateViewedAt();
+            return vh;
+        }
+
+        ViewHistory.ViewHistoryId id = new ViewHistory.ViewHistoryId(
+                user.getUserId(),
+                listing.getListingId()
+        );
+
+        ViewHistory viewHistory = ViewHistory.builder()
+                .id(id)
+                .user(user)
+                .listing(listing)
+                .viewedAt(Instant.now())
+                .build();
+
+        return viewHistoryRepository.save(viewHistory);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<ViewHistoryResponse> getUserViewHistory(String username, Integer page, Integer size, String sortBy, String sortDirection) {
 

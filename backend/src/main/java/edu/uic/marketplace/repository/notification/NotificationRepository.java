@@ -1,7 +1,6 @@
 package edu.uic.marketplace.repository.notification;
 
 import edu.uic.marketplace.model.notification.Notification;
-import edu.uic.marketplace.model.notification.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -11,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -31,10 +29,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             Pageable pageable
     );
 
-    /**
-     * Original method (kept for backward compatibility)
-     */
-    Page<Notification> findByUser_UsernameOrderByCreatedAtDesc(String username, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("""
@@ -52,11 +46,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * Original method (kept for backward compatibility)
      */
     Page<Notification> findByUser_UsernameAndReadAtIsNullOrderByCreatedAtDesc(String username, Pageable pageable);
-
-    /**
-     * Find notifications for a user filtered by type.
-     */
-    List<Notification> findByUser_UsernameAndType(String username, NotificationType type);
 
     /**
      * Count unread notifications for a user.
@@ -79,11 +68,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * Delete all notifications for a user.
      */
     void deleteByUser_Username(String username);
-
-    /**
-     * Delete notifications by related entity.
-     */
-    void deleteByEntityTypeAndEntityId(String entityType, String entityId);
 
 
     /**

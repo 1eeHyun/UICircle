@@ -21,8 +21,21 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler({IllegalStateException.class, IllegalArgumentException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequest(RuntimeException e) {
+        // Return 400 with domain-specific error message
+        return ResponseEntity
+                .status(400)
+                .body(Map.of(
+                        "status", 400,
+                        "message", e.getMessage(),
+                        "timestamp", LocalDateTime.now()
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception e) {
+        // Generic fallback for unexpected errors
         return ResponseEntity
                 .status(500)
                 .body(Map.of(
