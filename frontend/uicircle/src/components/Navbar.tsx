@@ -1,6 +1,7 @@
 // src/components/Navbar.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NotificationDropdown from "@/features/notification/components/NotificationDropdown";
 
 const Navbar: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -67,6 +68,9 @@ const Navbar: React.FC = () => {
 
           {/* Right Section */}
           <div className="flex items-center gap-3">
+
+            {/* Notification Dropdown (only if logged in) */}
+            {isLoggedIn && <NotificationDropdown />}
 
             {/* User menu (only if logged in) */}
             {isLoggedIn && (
