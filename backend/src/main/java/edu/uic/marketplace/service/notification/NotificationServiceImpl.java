@@ -27,6 +27,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final AuthValidator authValidator;
 
+    private final NotificationSseService notificationSseService;
+
     @Override
     @Transactional
     public NotificationResponse createNotification(String username, NotificationType type, String entityType, String entityId, String message) {
@@ -49,7 +51,10 @@ public class NotificationServiceImpl implements NotificationService {
         // Save
         notificationRepository.save(notification);
 
-        return NotificationResponse.from(notification);
+        NotificationResponse dto = NotificationResponse.from(notification);
+        notificationSseService.sendNotification(user.getUserId(), dto);
+
+        return dto;
     }
 
     @Override
