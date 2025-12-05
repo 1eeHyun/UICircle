@@ -16,7 +16,7 @@ const ProductDetails = ({
   onCategoryClick,
 }: ProductDetailsProps) => {
   return (
-    <div className="border-t pt-6">
+    <div className="border-t pt-6 mt-6">
       <h2 className="text-lg font-bold text-gray-900 mb-2">Details</h2>
       <div className="space-y-3">
         <div className="flex">

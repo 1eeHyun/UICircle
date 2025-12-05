@@ -18,6 +18,7 @@ import ProductDetails from "@/features/listings/components/listing-detail/Produc
 import ProductDescription from "@/features/listings/components/listing-detail/ProductDescription";
 import SellerListings from "@/features/listings/components/listing-detail/SellerListings";
 import Breadcrumb from "@/features/listings/components/listing-detail/Breadcrumb";
+import LocationMap from "@/features/listings/components/listing-detail/LocationMap";
 
 const ListingDetailPage = () => {
   const { listingId } = useParams<{ listingId: string }>();
@@ -159,6 +160,12 @@ const ListingDetailPage = () => {
             <ProductStats
               viewCount={listing.viewCount}
               favoriteCount={listing.favoriteCount}
+            />
+
+            <LocationMap
+              latitude={listing.latitude}
+              longitude={listing.longitude}
+              title={listing.title}
             />
 
             <ProductDetails
