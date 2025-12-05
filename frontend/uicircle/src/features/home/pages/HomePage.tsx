@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import CategoryMenu from "@/components/CategoryMenu";
 import ListingCard from "@/components/ListingCard";
+import HomePageTabs from "@/features/listings/components/home/HomePageTabs";
+import MyFavoritesSection from "@/features/listings/components/listing-favorite/MyFavoritesSection";
+
 import {
   getTopLevelCategories,
   getAllActiveListings,
@@ -15,6 +18,8 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [activeTab, setActiveTab] = useState<"RECENT" | "LIKES">("RECENT");
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -23,7 +28,7 @@ const HomePage = () => {
           getTopLevelCategories(),
           getAllActiveListings(0, 20, "createdAt", "DESC"),
         ]);
-        
+
         setCategories(categoriesData);
         setListings(listingsData.content);
       } catch (err: any) {
@@ -37,61 +42,45 @@ const HomePage = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-surface-light">
-        <Navbar />
-        <div className="flex justify-center items-center h-96">
-          <div className="text-center">
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
-
   if (error) {
-    return (
-      <div className="min-h-screen bg-surface-light">
-        <Navbar />
-        <div className="flex justify-center items-center h-96">
-          <div className="text-center">            
-            <p className="text-red-600 font-medium">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <div>{error}</div>;
   }
 
   return (
     <div className="min-h-screen bg-surface-light">
       <Navbar />
       <CategoryMenu categories={categories} />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">        
 
-        {/* Listings Section */}
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Recent Listings</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Updated just now</span>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {listings.length === 0 ? (
-          <div className="text-center py-20 bg-background-light rounded-2xl border-2 border-dashed border-border-light">
-            <svg className="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p className="text-gray-500 text-lg">No listings available yet.</p>
-            <p className="text-gray-400 text-sm mt-2">Be the first to post something!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {listings.map((listing) => (
-              <ListingCard key={listing.publicId} listing={listing} />
-            ))}
+        {/* Home tab */}
+        <HomePageTabs activeTab={activeTab} onChange={setActiveTab} />
+
+        {/* Section */}
+        {activeTab === "RECENT" && (
+          <div>
+            <div className="
+              grid 
+              grid-cols-2 
+              sm:grid-cols-3 
+              md:grid-cols-4 
+              lg:grid-cols-5 
+              xl:grid-cols-6 
+              gap-4
+            ">
+              {listings.map((listing) => (
+                <ListingCard key={listing.publicId} listing={listing} />
+              ))}
+            </div>
           </div>
         )}
+
+        {activeTab === "LIKES" && (
+          <MyFavoritesSection />
+        )}
+
       </div>
     </div>
   );

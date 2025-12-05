@@ -205,3 +205,12 @@ export const getSellerListingsBySeller = async (
 
   return res.data.data;
 };
+
+export const getMyFavoriteListings = async () => {
+  const response = await instance.get<{
+    success: boolean;
+    data: PageResponse<ListingSummaryResponse>;
+  }>("/listings/favorites/me");
+
+  return response.data.data.content; // ListingSummaryResponse[]
+};
