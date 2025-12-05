@@ -48,10 +48,17 @@ public class FavoriteServiceImpl implements FavoriteService {
         }
 
         // 3) add
+        Favorite.FavoriteId id = new Favorite.FavoriteId(
+                user.getUserId(),
+                listing.getListingId()
+        );
+
         Favorite fav = Favorite.builder()
+                .id(id)
                 .user(user)
                 .listing(listing)
                 .build();
+
         favoriteRepository.save(fav);
         listing.incrementFavoriteCount();
 
