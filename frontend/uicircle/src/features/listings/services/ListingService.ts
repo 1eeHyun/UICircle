@@ -10,13 +10,14 @@ export interface CategoryResponse {
 export interface ListingSummaryResponse {
   publicId: string;
   title: string;
-  description: string;
   price: number;
+  condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
   status: string;
+  thumbnailUrl: string | null;
+  viewCount: number;
+  favoriteCount: number;
+  isFavorite: boolean;
   createdAt: string;
-  thumbnailUrl?: string;
-  categoryName: string;
-  sellerUsername: string;
 }
 
 export interface PageResponse<T> {
@@ -173,5 +174,31 @@ export const getFavoriteCount = async (publicId: string) => {
     `/listings/favorites/count`,
     { params: { publicId } }
   );
+  return res.data.data;
+};
+
+export const getSellerListingsBySeller = async (
+  sellerPublicId: string,
+  page = 0,
+  size = 6,
+  status?: string
+): Promise<PageResponse<ListingSummaryResponse>> => {
+  const params: Record<string, any> = {
+    sellerPublicId,
+    page,
+    size,
+  };
+
+  if (status) {
+    params.status = status;
+  }
+
+  const res = await instance.get<{
+    success: boolean;
+    data: PageResponse<ListingSummaryResponse>;
+  }>("/listings/seller/list", {
+    params,
+  });
+
   return res.data.data;
 };

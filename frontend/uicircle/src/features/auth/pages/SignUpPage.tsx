@@ -120,7 +120,7 @@ const SignUpPage = () => {
         phoneNumber: signupData.phoneNumber || undefined,
       });
       
-      navigate("/");
+      navigate("/verify-email/pending");
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || "Signup failed. Please try again.";
       setErrors({ ...errors, submit: errorMessage });
