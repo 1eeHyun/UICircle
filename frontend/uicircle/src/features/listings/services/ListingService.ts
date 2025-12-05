@@ -13,6 +13,9 @@ export interface ListingSummaryResponse {
   price: number;
   condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
   status: string;
+  categoryName?: string;
+  description?: string;
+  sellerUsername?: string;
   thumbnailUrl: string | null;
   viewCount: number;
   favoriteCount: number;
