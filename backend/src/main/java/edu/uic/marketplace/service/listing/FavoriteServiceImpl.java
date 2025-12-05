@@ -95,14 +95,17 @@ public class FavoriteServiceImpl implements FavoriteService {
         int p = (page == null || page < 0) ? 0 : page;
         int s = (size == null || size <= 0) ? 20 : size;
 
-        Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "favoritedAt"));
 
-        Page<Favorite> favPage = favoriteRepository.findByUser_Username(user.getUsername(), pageable);
+        Page<Favorite> favPage = favoriteRepository.findActiveFavoritesByUsername(
+                user.getUsername(),
+                ListingStatus.ACTIVE,
+                pageable
+        );
 
-        List<ListingSummaryResponse> content = favPage.getContent().stream()
+        var content = favPage.getContent().stream()
                 .map(Favorite::getListing)
-                .filter(l -> l.getDeletedAt() == null && l.getStatus() == ListingStatus.ACTIVE)
-                .map(l -> ListingSummaryResponse.from(l, true))
+                .map(listing -> ListingSummaryResponse.from(listing, true))
                 .toList();
 
         return PageMapper.toPageResponse(favPage, content);
@@ -119,10 +122,8 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Override
     public List<String> getUserFavoriteListingPublicIds(String username) {
 
-        User user = authValidator.validateUserByUsername(username);
-        return favoriteRepository.findByUser(user).stream()
-                .map(fav -> fav.getListing().getPublicId())
-                .toList();
+        authValidator.validateUserByUsername(username);
+        return favoriteRepository.findListingIdsByUser_Username(username);
     }
 
     @Override
