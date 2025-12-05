@@ -8,6 +8,7 @@ import {
   ListingResponse,
   getListing,
   CategoryResponse,
+  toggleFavorite,
 } from "../services/ListingService";
 
 import ImageGallery from "@/features/listings/components/listing-detail/ImageGallery";
@@ -55,8 +56,36 @@ const ListingDetailPage = () => {
   }, [listingId]);
 
   // Handler functions
-  const handleLike = () => {
-    console.log("Like clicked");
+  const handleLike = async () => {
+    if (!listing) return;
+
+    // 이전 값 백업
+    const prevIsFavorited = listing.isFavorited;
+    const prevFavoriteCount = listing.favoriteCount;
+
+    // optimistic update
+    const nextIsFavorited = !prevIsFavorited;
+    const nextFavoriteCount =
+      prevFavoriteCount + (nextIsFavorited ? 1 : -1);
+
+    setListing({
+      ...listing,
+      isFavorited: nextIsFavorited,
+      favoriteCount: nextFavoriteCount,
+    });
+
+    try {
+      await toggleFavorite(listing.publicId);
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+
+      // 실패 시 롤백
+      setListing({
+        ...listing,
+        isFavorited: prevIsFavorited,
+        favoriteCount: prevFavoriteCount,
+      });
+    }
   };
 
   const handleShare = () => {
@@ -69,6 +98,7 @@ const ListingDetailPage = () => {
 
   const handleViewProfile = () => {
     console.log("View profile clicked");
+    // 예: navigate(`/profile/${listing?.sellerProfile.publicId}`);
   };
 
   const handleAddToCart = () => {
@@ -134,22 +164,28 @@ const ListingDetailPage = () => {
           onCategoryClick={() => navigate(-1)}
         />
 
-        <div className="flex gap-24">
-          {/* Left: Image Gallery (Sticky) */}
-          <div className="w-full max-w-2xl flex-shrink-0">
+        <div className="mt-4 flex flex-col lg:flex-row gap-8 lg:gap-16">
+          {/* Left: Image / Seller  */}
+          <div className="w-full lg:basis-[55%] lg:max-w-3xl lg:flex-shrink-0">
             <div className="sticky top-4">
               <ImageGallery images={listing.images} title={listing.title} />
 
               <ActionButtons
                 favoriteCount={listing.favoriteCount}
+                isFavorited={listing.isFavorited}
                 onLike={handleLike}
                 onShare={handleShare}
                 onMore={handleMore}
               />
 
               <SellerCard
-                seller={listing.seller}
-                salesCount={listing.viewCount} // TODO: Change to actual sales count
+                seller={{
+                  username:
+                    listing.sellerProfile.displayName ??
+                    listing.sellerProfile.publicId,
+                  avatarUrl: listing.sellerProfile.avatarUrl,
+                }}
+                salesCount={listing.sellerProfile.soldCount ?? 0}
                 onViewProfile={handleViewProfile}
               />
             </div>

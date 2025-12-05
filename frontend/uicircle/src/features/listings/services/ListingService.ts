@@ -35,8 +35,18 @@ export interface CreateListingRequest {
   categorySlug: string;
   latitude: number;
   longitude: number;
-
 }
+
+export interface ProfileResponse {
+  publicId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  major: string | null;
+  soldCount: number;
+  buyCount: number;
+}
+
 export interface ListingResponse {
   publicId: string;
   title: string;
@@ -44,9 +54,7 @@ export interface ListingResponse {
   price: number;
   condition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
   status: string;
-  seller: {
-    username: string;
-  };
+  sellerProfile: ProfileResponse;
   category: {
     categorySlug: string;
     name: string;
@@ -151,3 +159,19 @@ export const getListing = async (listingId: string) => {
   return response.data.data;
 };
 
+export const toggleFavorite = async (publicId: string) => {
+  const res = await instance.post<{ success: boolean }>(
+    `/listings/favorites/toggle`,
+    null,
+    { params: { publicId } }
+  );
+  return res.data.success;
+};
+
+export const getFavoriteCount = async (publicId: string) => {
+  const res = await instance.get<{ success: boolean; data: number }>(
+    `/listings/favorites/count`,
+    { params: { publicId } }
+  );
+  return res.data.data;
+};

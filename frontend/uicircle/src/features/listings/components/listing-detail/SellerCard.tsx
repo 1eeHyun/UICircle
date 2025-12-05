@@ -1,10 +1,11 @@
 interface Seller {
   username: string;
+  avatarUrl?: string | null;
 }
 
 interface SellerCardProps {
   seller: Seller;
-  salesCount: number; // TODO: change from viewCount to actual sales count
+  salesCount: number;
   onViewProfile?: () => void;
 }
 
