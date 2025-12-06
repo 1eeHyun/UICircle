@@ -47,11 +47,6 @@ export default function NotificationDropdown() {
     }
   };
 
-  const handleViewAll = () => {
-    navigate("/notifications");
-    setOpen(false);
-  };
-
   return (
     <div className="relative" ref={dropdownRef}>
       <NotificationBell

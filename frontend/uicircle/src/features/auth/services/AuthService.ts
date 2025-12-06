@@ -29,6 +29,19 @@ export interface LoginResponse {
   };
 }
 
+// src/types/user.ts
+export interface UserResponse {
+  publicId: string;
+  username: string;
+  email: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  role: string;       // UserRole enum → string
+  status: string;     // UserStatus enum → string
+  createdAt: string;  // Instant →
+}
+
 export const login = async (form: LoginRequest) => {
   const response = await instance.post<{ success: boolean; data: LoginResponse }>("/auth/login", form);
   return response.data;
