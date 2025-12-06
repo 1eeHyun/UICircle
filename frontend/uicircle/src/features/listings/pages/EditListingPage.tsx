@@ -438,7 +438,6 @@ const EditListingPage = () => {
     !errors.condition &&
     !!form.title &&
     !!form.description &&
-    form.price > 0 &&
     !!form.categorySlug &&
     !!form.condition;
 
