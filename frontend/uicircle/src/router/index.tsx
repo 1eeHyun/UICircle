@@ -9,7 +9,7 @@ import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
-import UserProfilePage from "@/features/profile/pages/UserProfilePage";
+import ProfilePage from "@/features/profile/pages/ProfilePage";
 import OffersPage from "@/features/offers/pages/OffersPage";
 import MessagesPage from "@/features/messages/pages/MessagesPage";
 
@@ -27,16 +27,22 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
   {
-    path: "/profile/:id",
+    path: "/profile",
     element: (
       <ProtectedRoute>
-        <UserProfilePage />
+        <ProfilePage />
       </ProtectedRoute>
     ),
   },
-
+  {
+    path: "/profile/:publicId",
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "/category/:categorySlug",
     element: (

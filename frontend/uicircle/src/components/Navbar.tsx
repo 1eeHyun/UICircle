@@ -174,17 +174,6 @@ const Navbar: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setShowUserMenu(false);
-                          navigate("/favorites");
-                        }}
-                        className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-surface-light hover:text-primary transition-colors"
-                      >
-                        Favorites
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowUserMenu(false);
                           navigate("/messages");
                         }}
                         className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-surface-light hover:text-primary transition-colors"

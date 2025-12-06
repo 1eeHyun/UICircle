@@ -1,3 +1,5 @@
+// src/features/profile/pages/ProfilePage.tsx
+
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -21,56 +23,81 @@ import {
 
 type TabType = "listings" | "sold" | "settings";
 
+/**
+ * ProfilePage
+ * - /profile           -> show my profile (getMyProfile)
+ * - /profile/:publicId -> show other's profile (getPublicProfile)
+ * - Shows listings / sold items / settings (for own profile)
+ */
 const ProfilePage = () => {
+  // publicId route param for viewing other user's profile
   const { publicId } = useParams<{ publicId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // Profile data state
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [myProfile, setMyProfile] = useState<ProfileResponse | null>(null);
+
+  // Category / listing state
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [listings, setListings] = useState<ListingSummaryResponse[]>([]);
+
+  // UI state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<TabType>((searchParams.get("tab") as TabType) || "listings");
 
-  // Edit form state
+  // Active tab (listings / sold / settings)
+  const [activeTab, setActiveTab] = useState<TabType>(
+    (searchParams.get("tab") as TabType) || "listings"
+  );
+
+  // Edit form state for settings tab
   const [editForm, setEditForm] = useState<UpdateProfileRequest>({});
 
+  // File input refs for avatar and banner
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  const isOwnProfile = myProfile && profile && myProfile.publicId === profile.publicId;
+  // Check if currently viewing my own profile
+  const isOwnProfile =
+    !!myProfile && !!profile && myProfile.publicId === profile.publicId;
 
+  /**
+   * Fetch categories, my profile, target profile, and listing data
+   * - Runs whenever publicId or activeTab changes
+   */
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError("");
 
-        // Fetch categories
+        // 1) Fetch categories (for CategoryMenu)
         const categoriesData = await getTopLevelCategories();
         setCategories(categoriesData);
 
-        // Fetch my profile to check if viewing own profile
+        // 2) Fetch my profile to know if this is my own profile
         try {
           const myProfileData = await getMyProfile();
           setMyProfile(myProfileData);
         } catch {
-          // Not logged in
+          // If not logged in or request fails, simply treat as no myProfile
           setMyProfile(null);
         }
 
-        // Fetch profile
+        // 3) Fetch target profile (self or other)
         let profileData: ProfileResponse;
         if (publicId) {
+          // Viewing other user's profile
           profileData = await getPublicProfile(publicId);
         } else {
+          // Viewing own profile (no publicId in route)
           profileData = await getMyProfile();
         }
         setProfile(profileData);
 
-        // Fetch listings
+        // 4) Fetch listings for this profile (ACTIVE or SOLD)
         if (profileData.publicId) {
           try {
             const listingsData = await getSellerListingsBySeller(
@@ -94,7 +121,12 @@ const ProfilePage = () => {
     fetchData();
   }, [publicId, activeTab]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Handle avatar image upload
+   */
+  const handleAvatarUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file || !isOwnProfile) return;
 
@@ -107,7 +139,12 @@ const ProfilePage = () => {
     }
   };
 
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Handle banner image upload
+   */
+  const handleBannerUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file || !isOwnProfile) return;
 
@@ -120,6 +157,9 @@ const ProfilePage = () => {
     }
   };
 
+  /**
+   * Save profile changes from settings tab
+   */
   const handleSaveProfile = async () => {
     if (!isOwnProfile) return;
 
@@ -133,24 +173,32 @@ const ProfilePage = () => {
     }
   };
 
+  /**
+   * Loading state (initial fetch)
+   */
   if (loading) {
     return (
       <div className="min-h-screen bg-surface-light">
         <Navbar />
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
         </div>
       </div>
     );
   }
 
+  /**
+   * Error state or missing profile
+   */
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-surface-light">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <h2 className="text-2xl font-bold mb-4">Profile Not Found</h2>
-          <p className="text-gray-600 mb-6">{error || "This profile doesn't exist"}</p>
+          <p className="text-gray-600 mb-6">
+            {error || "This profile doesn't exist"}
+          </p>
           <button
             onClick={() => navigate("/home")}
             className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark"
@@ -162,12 +210,18 @@ const ProfilePage = () => {
     );
   }
 
+  /**
+   * Normal render
+   */
   return (
     <div className="min-h-screen bg-surface-light">
+      {/* Top navbar */}
       <Navbar />
+
+      {/* Category bar */}
       <CategoryMenu categories={categories} />
 
-      {/* Banner */}
+      {/* Banner area */}
       <div className="relative h-48 md:h-64 bg-gradient-to-r from-primary/20 to-primary/40 overflow-hidden">
         {profile.bannerUrl ? (
           <img
@@ -178,7 +232,7 @@ const ProfilePage = () => {
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-primary/30 via-primary/20 to-primary/40" />
         )}
-        
+
         {/* Banner upload button (only for own profile) */}
         {isOwnProfile && (
           <>
@@ -199,10 +253,11 @@ const ProfilePage = () => {
         )}
       </div>
 
+      {/* Main profile content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Profile Header */}
+        {/* Profile header section */}
         <div className="relative -mt-16 mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
-          {/* Avatar */}
+          {/* Avatar section */}
           <div className="relative">
             <div className="w-32 h-32 rounded-full border-4 border-white bg-surface-light overflow-hidden shadow-lg">
               {profile.avatarUrl ? (
@@ -219,7 +274,7 @@ const ProfilePage = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Avatar upload button (only for own profile) */}
             {isOwnProfile && (
               <>
@@ -227,9 +282,24 @@ const ProfilePage = () => {
                   onClick={() => avatarInputRef.current?.click()}
                   className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary-dark transition"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                 </button>
                 <input
@@ -243,7 +313,7 @@ const ProfilePage = () => {
             )}
           </div>
 
-          {/* Profile Info */}
+          {/* Profile basic info */}
           <div className="flex-1 pt-4 sm:pt-0 sm:pb-2">
             <h1 className="text-2xl font-bold text-gray-900">
               {profile.displayName}
@@ -257,7 +327,7 @@ const ProfilePage = () => {
             )}
           </div>
 
-          {/* Action Buttons */}
+          {/* Action buttons (edit profile) */}
           <div className="flex gap-2 sm:self-center">
             {isOwnProfile && (
               <button
@@ -277,19 +347,23 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Stats section */}
         <div className="flex gap-6 mb-6 border-b border-border-light pb-4">
           <div className="text-center">
-            <p className="text-xl font-bold text-gray-900">{profile.soldCount}</p>
+            <p className="text-xl font-bold text-gray-900">
+              {profile.soldCount}
+            </p>
             <p className="text-sm text-gray-500">Sold</p>
           </div>
           <div className="text-center">
-            <p className="text-xl font-bold text-gray-900">{profile.buyCount}</p>
+            <p className="text-xl font-bold text-gray-900">
+              {profile.buyCount}
+            </p>
             <p className="text-sm text-gray-500">Bought</p>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs (Listings / Sold / Settings) */}
         <div className="flex gap-4 mb-6 border-b border-border-light">
           <button
             onClick={() => setActiveTab("listings")}
@@ -325,12 +399,14 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Content */}
+        {/* Tab content */}
         {activeTab === "settings" && isOwnProfile ? (
+          // Settings tab (edit profile)
           <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
             <h2 className="text-lg font-semibold mb-4">Edit Profile</h2>
-            
+
             <div className="space-y-4">
+              {/* Display name field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Display Name
@@ -338,11 +414,17 @@ const ProfilePage = () => {
                 <input
                   type="text"
                   value={editForm.displayName || ""}
-                  onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      displayName: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
-              
+
+              {/* Major field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Major
@@ -350,25 +432,37 @@ const ProfilePage = () => {
                 <input
                   type="text"
                   value={editForm.major || ""}
-                  onChange={(e) => setEditForm({ ...editForm, major: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      major: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   placeholder="e.g. Computer Science"
                 />
               </div>
-              
+
+              {/* Bio field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Bio
                 </label>
                 <textarea
                   value={editForm.bio || ""}
-                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      bio: e.target.value,
+                    })
+                  }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   placeholder="Tell us about yourself..."
                 />
               </div>
-              
+
+              {/* Action buttons */}
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveProfile}
@@ -388,11 +482,14 @@ const ProfilePage = () => {
             </div>
           </div>
         ) : (
+          // Listings / Sold tab content
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-8">
             {listings.length === 0 ? (
               <div className="col-span-full text-center py-16 bg-white rounded-lg shadow-sm">
                 <p className="text-gray-500">
-                  {activeTab === "sold" ? "No sold items yet" : "No listings yet"}
+                  {activeTab === "sold"
+                    ? "No sold items yet"
+                    : "No listings yet"}
                 </p>
               </div>
             ) : (
@@ -407,4 +504,4 @@ const ProfilePage = () => {
   );
 };
 
-export { ProfilePage };
+export default ProfilePage;
