@@ -214,3 +214,21 @@ export const getMyFavoriteListings = async () => {
 
   return response.data.data.content; // ListingSummaryResponse[]
 };
+
+export interface NearbyListingRequest {
+  latitude: number;
+  longitude: number;
+  radiusMiles: number;
+  categorySlug?: string;
+}
+
+export const getNearbyListings = async (
+  request: NearbyListingRequest
+): Promise<ListingSummaryResponse[]> => {
+  const res = await instance.post<{
+    success: boolean;
+    data: ListingSummaryResponse[];
+  }>("/listings/nearby", request);
+
+  return res.data.data;
+};

@@ -215,7 +215,7 @@ public class ListingController implements ListingApiDocs {
     }
 
     @Override
-    @GetMapping("/nearby")
+    @PostMapping("/nearby")
     public ResponseEntity<CommonResponse<List<ListingSummaryResponse>>> getNearby(
             @Valid @RequestBody NearbyListingRequest request) {
 

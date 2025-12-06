@@ -20,17 +20,17 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="bg-background-light border-b border-border-light shadow-sm sticky top-0 z-50">
+    <nav className="bg-background-light border-b border-border-light sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          
+
           {/* Logo */}
           <button
             type="button"
             onClick={() => navigate("/home")}
             className="flex items-center gap-2 group"
           >
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-all">
               <span className="text-background-light font-extrabold text-xl">
                 U
               </span>
@@ -69,10 +69,10 @@ const Navbar: React.FC = () => {
           {/* Right Section */}
           <div className="flex items-center gap-3">
 
-            {/* Notification Dropdown (only if logged in) */}
+            {/* Notification Dropdown */}
             {isLoggedIn && <NotificationDropdown />}
 
-            {/* User menu (only if logged in) */}
+            {/* User menu */}
             {isLoggedIn && (
               <div className="relative">
                 <button
@@ -93,6 +93,7 @@ const Navbar: React.FC = () => {
                 {/* Dropdown menu */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 rounded-lg bg-background-light border border-border-light shadow-lg py-1 text-sm">
+                    
                     <button
                       type="button"
                       onClick={() => {
@@ -162,7 +163,7 @@ const Navbar: React.FC = () => {
               </div>
             )}
 
-            {/* Sell button (solid color, no gradient) */}
+            {/* Sell button */}
             <button
               type="button"
               onClick={() =>
@@ -174,7 +175,6 @@ const Navbar: React.FC = () => {
             </button>
 
           </div>
-
         </div>
       </div>
     </nav>
