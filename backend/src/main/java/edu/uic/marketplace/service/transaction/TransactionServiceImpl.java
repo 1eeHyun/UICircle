@@ -130,8 +130,19 @@ public class TransactionServiceImpl implements TransactionService {
             throw new IllegalStateException("Unauthorized");
         }
 
-        if (!tx.isCompleted() && !tx.isCancelled()) {
-            tx.complete();
+        // Mark confirmation depending on the user
+        if (tx.getBuyer().getUsername().equals(username)) {
+            tx.confirmBuyer();
+        } else if (tx.getSeller().getUsername().equals(username)) {
+            tx.confirmSeller();
+        }
+
+        // If both confirmed → mark transaction completed and listing sold
+        if (tx.isFullyConfirmed()) {
+            tx.complete();  // sets COMPLETED status + timestamp
+
+            Listing listing = tx.getListing();
+            listing.setStatus(ListingStatus.SOLD);
         }
 
         return TransactionResponse.from(tx);

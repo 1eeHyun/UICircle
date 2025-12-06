@@ -81,6 +81,26 @@ public class Transaction {
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
+    @Column(name = "buyer_confirmed", nullable = false)
+    @Builder.Default
+    private boolean buyerConfirmed = false;
+
+    @Column(name = "seller_confirmed", nullable = false)
+    @Builder.Default
+    private boolean sellerConfirmed = false;
+
+    public void confirmBuyer() {
+        this.buyerConfirmed = true;
+    }
+
+    public void confirmSeller() {
+        this.sellerConfirmed = true;
+    }
+
+    public boolean isFullyConfirmed() {
+        return buyerConfirmed && sellerConfirmed;
+    }
+
     /**
      * Creation timestamp
      */
