@@ -10,6 +10,7 @@ import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
 import OffersPage from "@/features/offers/pages/OffersPage";
+import MessagesPage from "@/features/messages/pages/MessagesPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -74,6 +75,22 @@ const AppRouter = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <OffersPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/messages",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/chat/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
       </ProtectedRoute>
     )
   },

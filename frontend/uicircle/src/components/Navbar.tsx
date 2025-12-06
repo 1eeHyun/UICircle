@@ -169,10 +169,6 @@ const Navbar: React.FC = () => {
         <MessageDrawer
           isOpen={showMessages}
           onClose={() => setShowMessages(false)}
-          onSelectConversation={(id) => {
-            setShowMessages(false);
-            navigate(`/messages/${id}`);
-          }}
         />
       )}
     </>
