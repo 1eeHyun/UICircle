@@ -39,7 +39,7 @@ const MessagesPage: React.FC = () => {
       // Auto-select first conversation when nothing is selected
       if (!selectedConversationId && pageData.content.length > 0) {
         setSelectedConversationId(pageData.content[0].conversationPublicId);
-      }
+      }    
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to load conversations");
@@ -94,8 +94,8 @@ const MessagesPage: React.FC = () => {
                     <button className="pb-3 border-b-3 border-primary text-primary">
                       All
                     </button>
-                    <button className="pb-3 text-gray-500">Selling</button>
-                    <button className="pb-3 text-gray-500">Buying</button>
+                    {/* <button className="pb-3 text-gray-500">Selling</button>
+                    <button className="pb-3 text-gray-500">Buying</button> */}
                   </div>
                 </div>
 

@@ -111,6 +111,14 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     )
   },
+  {
+    path: "/chat",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
+      </ProtectedRoute>
+    )
+  },
 ]);
 
 export { AppRouter };

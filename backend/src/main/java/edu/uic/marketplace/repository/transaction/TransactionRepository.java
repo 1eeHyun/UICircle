@@ -64,4 +64,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     """)
     @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     List<Transaction> findSales(@Param("sellerUsername") String sellerUsername);
+
+    // TransactionRepository
+
+    @Query("""
+       SELECT t FROM Transaction t
+       WHERE t.listing.publicId IN :listingPublicIds
+       """)
+    List<Transaction> findByListing_PublicIdIn(@Param("listingPublicIds") List<String> listingPublicIds);
+
 }

@@ -25,6 +25,8 @@ public class PriceOfferResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    private String transactionPublicId;
+
     public static PriceOfferResponse from(PriceOffer offer) {
         return PriceOfferResponse.builder()
                 .publicId(offer.getPublicId())
@@ -35,6 +37,20 @@ public class PriceOfferResponse {
                 .status(offer.getStatus())
                 .createdAt(offer.getCreatedAt())
                 .updatedAt(offer.getUpdatedAt())
+                .build();
+    }
+
+    public static PriceOfferResponse from(PriceOffer offer, String transactionPublicId) {
+        return PriceOfferResponse.builder()
+                .publicId(offer.getPublicId())
+                .listing(ListingSummaryResponse.from(offer.getListing()))
+                .buyer(UserResponse.from(offer.getBuyer()))
+                .amount(offer.getAmount())
+                .message(offer.getMessage())
+                .status(offer.getStatus())
+                .createdAt(offer.getCreatedAt())
+                .updatedAt(offer.getUpdatedAt())
+                .transactionPublicId(transactionPublicId)
                 .build();
     }
 }

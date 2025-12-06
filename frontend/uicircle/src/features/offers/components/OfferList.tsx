@@ -153,7 +153,7 @@ export const OfferList: React.FC<OfferListProps> = ({
             className="flex w-full max-w-full overflow-hidden gap-3 rounded-xl border bg-white p-4 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md"
           >
             {/* Thumbnail */}
-            <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+            <div className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
               {offer.listing.thumbnailUrl ? (
                 <img
                   src={offer.listing.thumbnailUrl}
@@ -251,7 +251,7 @@ export const OfferList: React.FC<OfferListProps> = ({
                   <button
                     type="button"
                     onClick={(e) => handleOpenChat(e, offer)}
-                    className="rounded-md border px-3 py-1 text-xs font-medium hover:bg-gray-100"
+                    className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-gray-100"
                   >
                     {type === "sent" ? "Message seller" : "Message buyer"}
                   </button>

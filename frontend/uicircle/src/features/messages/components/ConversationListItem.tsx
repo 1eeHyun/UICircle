@@ -54,11 +54,11 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
             )}
           </div>
 
-          <p className="mt-0.5 text-xs text-gray-500 truncate">
+          <p className="mt-0.5 text-sm text-gray-500 truncate">
             {otherUser.username}
           </p>
 
-          <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+          <p className="mt-1 text-sm text-gray-600 line-clamp-2">
             {lastMessage ? lastMessage.body : "No messages yet."}
           </p>
         </div>

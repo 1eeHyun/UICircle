@@ -10,6 +10,7 @@ import edu.uic.marketplace.model.message.Conversation;
 import edu.uic.marketplace.model.transaction.PriceOffer;
 import edu.uic.marketplace.model.user.User;
 import edu.uic.marketplace.repository.transaction.PriceOfferRepository;
+import edu.uic.marketplace.repository.transaction.TransactionRepository;
 import edu.uic.marketplace.service.message.ConversationService;
 import edu.uic.marketplace.service.message.MessageService;
 import edu.uic.marketplace.service.notification.NotificationService;
@@ -38,6 +39,9 @@ public class PriceOfferServiceImpl implements PriceOfferService {
 
     private final ConversationService conversationService;
     private final MessageService messageService;
+
+    private final TransactionRepository transactionRepository;
+    private final TransactionService transactionService;
 
 
     // ==================== create offer ====================
@@ -143,7 +147,16 @@ public class PriceOfferServiceImpl implements PriceOfferService {
         // 9) Create conversation for this accepted offer
         Conversation conversation = conversationService.createConversationForOffer(listing, buyer);
 
-        // 10) Create first message in conversation (seller -> buyer)
+        // 10) Create a pending transaction for this accepted offer
+        //    - status: PENDING (default in Transaction entity)
+        //    - buyerConfirmed / sellerConfirmed: false (default)
+        transactionService.createTransaction(
+                listing.getPublicId(),
+                buyer.getUsername(),
+                offer.getAmount()
+        );
+
+        // 11) Create first message in conversation (seller -> buyer)
         String initialMessageBody = buildAcceptedOfferMessage(offer, request);
 
         SendMessageRequest messageRequest = new SendMessageRequest();
@@ -155,8 +168,9 @@ public class PriceOfferServiceImpl implements PriceOfferService {
                 messageRequest
         );
 
-        // 11) Return response
+        // 12) Return response
         return PriceOfferResponse.from(offer);
+
     }
 
     // ==================== reject offer (seller) ====================
@@ -325,16 +339,33 @@ public class PriceOfferServiceImpl implements PriceOfferService {
     @Transactional(readOnly = true)
     public Optional<PriceOfferResponse> getAcceptedOffer(String listingPublicId) {
 
-        List<PriceOffer> acceptedOffers =
-                priceOfferRepository.findByListing_PublicIdAndStatus(
-                        listingPublicId,
-                        OfferStatus.ACCEPTED
-                );
+//        List<PriceOffer> acceptedOffers =
+//                priceOfferRepository.findByListing_PublicIdAndStatus(
+//                        listingPublicId,
+//                        OfferStatus.ACCEPTED
+//                );
+//
+//        List<String> listingIds = acceptedOffers.stream()
+//                .map(o -> o.getListing().getPublicId())
+//                .distinct()
+//                .toList();
+//
+//        List<Transaction> transactions = transactionRepository.findByListing_PublicIdIn(listingIds);
+//        Map<String, String> listingToTxPublicId = transactions.stream()
+//                .collect(Collectors.toMap(
+//                        t -> t.getListing().getPublicId(),
+//                        Transaction::getPublicId,
+//                        (a, b) -> a
+//                ));
+//
+//        return acceptedOffers.stream()
+//                .map(offer -> {
+//                    String txPublicId = listingToTxPublicId.get(offer.getListing().getPublicId());
+//                    return PriceOfferResponse.from(offer, txPublicId);
+//                })
+//                .toList();
 
-        return acceptedOffers.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // latest first
-                .findFirst()
-                .map(PriceOfferResponse::from);
+        return null;
     }
 
     // ==================== auto reject other pending offers ====================
