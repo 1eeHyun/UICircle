@@ -16,7 +16,7 @@ import java.time.Instant;
 @Builder
 public class TransactionResponse {
 
-    private Long transactionId;
+    private String publicId;
     private ListingSummaryResponse listing;
     private UserResponse buyer;
     private UserResponse seller;
@@ -28,7 +28,7 @@ public class TransactionResponse {
 
     public static TransactionResponse from(Transaction transaction) {
         return TransactionResponse.builder()
-                .transactionId(transaction.getTransactionId())
+                .publicId(transaction.getPublicId())
                 .listing(ListingSummaryResponse.from(transaction.getListing()))
                 .buyer(UserResponse.from(transaction.getBuyer()))
                 .seller(UserResponse.from(transaction.getSeller()))

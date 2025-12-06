@@ -1,8 +1,11 @@
 package edu.uic.marketplace.repository.transaction;
 
 import edu.uic.marketplace.model.transaction.Transaction;
-import edu.uic.marketplace.model.transaction.TransactionStatus;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,44 +13,55 @@ import java.util.Optional;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    
+
     /**
-     * Find transaction by listing
+     * Find by transaction publicId (main lookup for API).
      */
-    Optional<Transaction> findByListing_ListingId(Long listingId);
-    
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE t.publicId = :publicId
+    """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Optional<Transaction> findByPublicId(@Param("publicId") String publicId);
+
+
     /**
-     * Find transactions by buyer
+     * Find by listing publicId.
      */
-    List<Transaction> findByBuyer_UserId(Long buyerId);
-    
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE t.listing.publicId = :listingPublicId
+    """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Optional<Transaction> findByListingPublicId(@Param("listingPublicId") String listingPublicId);
+
+
     /**
-     * Find transactions by seller
+     * Check if a transaction exists for given listing (publicId).
      */
-    List<Transaction> findByListing_Seller_UserId(Long sellerId);
-    
+    boolean existsByListing_PublicId(String listingPublicId);
+
+
     /**
-     * Find transactions by buyer and status
+     * Find purchases by username.
      */
-    List<Transaction> findByBuyer_UserIdAndStatus(Long buyerId, TransactionStatus status);
-    
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE t.buyer.username = :username
+        ORDER BY t.createdAt DESC
+    """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    List<Transaction> findPurchases(@Param("username") String username);
+
+
     /**
-     * Find transactions by seller and status
+     * Find sales by seller username.
      */
-    List<Transaction> findByListing_Seller_UserIdAndStatus(Long sellerId, TransactionStatus status);
-    
-    /**
-     * Count transactions by buyer
-     */
-    Long countByBuyer_UserId(Long buyerId);
-    
-    /**
-     * Count transactions by seller
-     */
-    Long countByListing_Seller_UserId(Long sellerId);
-    
-    /**
-     * Check if transaction exists for listing
-     */
-    boolean existsByListing_ListingId(Long listingId);
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE t.listing.seller.username = :sellerUsername
+        ORDER BY t.createdAt DESC
+    """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    List<Transaction> findSales(@Param("sellerUsername") String sellerUsername);
 }
