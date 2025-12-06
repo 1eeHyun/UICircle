@@ -7,6 +7,7 @@ import { SearchPage } from "../features/search/pages/SearchPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
+import { EditListingPage } from "@/features/listings/pages/EditListingPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
 import ProfilePage from "@/features/profile/pages/ProfilePage";
@@ -66,6 +67,14 @@ const AppRouter = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ListingDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/listings/:listingId/edit",
+    element: (
+      <ProtectedRoute>
+        <EditListingPage />
       </ProtectedRoute>
     ),
   },

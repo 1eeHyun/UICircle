@@ -41,6 +41,15 @@ export interface CreateListingRequest {
   longitude: number;
 }
 
+export interface UpdateListingRequest {
+  title?: string;
+  description?: string;
+  price?: number;
+  condition?: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
+  status?: string;
+  isNegotiable?: boolean;
+}
+
 export interface ProfileResponse {
   publicId: string;
   displayName: string;
@@ -231,4 +240,43 @@ export const getNearbyListings = async (
   }>("/listings/nearby", request);
 
   return res.data.data;
+};
+
+export const updateListing = async (
+  publicId: string,
+  request: UpdateListingRequest,
+  images?: File[]
+) => {
+  const formData = new FormData();
+  
+  formData.append("request", new Blob([JSON.stringify(request)], { type: "application/json" }));
+  
+  if (images && images.length > 0) {
+    images.forEach((image) => {
+      formData.append("images", image);
+    });
+  }
+
+  const response = await instance.patch<{ success: boolean; data: ListingResponse }>(
+    "/listings",
+    formData,
+    {
+      params: { publicId },
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  
+  return response.data.data;
+};
+
+export const deleteListing = async (publicId: string) => {
+  const response = await instance.delete<{ success: boolean }>(
+    "/listings",
+    {
+      params: { publicId },
+    }
+  );
+  return response.data.success;
 };

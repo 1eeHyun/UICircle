@@ -26,11 +26,15 @@ export const CreateListingForm: React.FC<CreateListingFormProps> = ({
   onImageChange,
   onRemoveImage,
   onCancel,
+  submitButtonText = "Create Listing",
+  loadingButtonText = "Creating...",
+  formTitle = "Create Listing",
+  formDescription = "Fill in the details below to list your item",
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Listing</h1>
-      <p className="text-gray-600 mb-8">Fill in the details below to list your item</p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{formTitle}</h1>
+      <p className="text-gray-600 mb-8">{formDescription}</p>
 
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Title Field */}
@@ -324,7 +328,7 @@ export const CreateListingForm: React.FC<CreateListingFormProps> = ({
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            {loading ? "Creating..." : "Create Listing"}
+            {loading ? loadingButtonText : submitButtonText}
           </button>
           <button
             type="button"

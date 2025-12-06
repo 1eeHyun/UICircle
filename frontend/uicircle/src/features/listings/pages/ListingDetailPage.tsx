@@ -7,7 +7,9 @@ import {
   ListingResponse,
   getListing,
   toggleFavorite,
+  deleteListing,
 } from "../services/ListingService";
+import { getMyProfile } from "@/features/profile/services/ProfileService";
 
 import ImageGallery from "@/features/listings/components/listing-detail/ImageGallery";
 import ActionButtons from "@/features/listings/components/listing-detail/ActionButtons";
@@ -30,6 +32,8 @@ const ListingDetailPage = () => {
   const [listing, setListing] = useState<ListingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [isOwner, setIsOwner] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { categories } = useCategories();
 
@@ -42,6 +46,15 @@ const ListingDetailPage = () => {
         setLoading(true);
         const listingData = await getListing(listingId!);
         setListing(listingData);
+
+        // Check if current user is the owner
+        try {
+          const myProfile = await getMyProfile();
+          setIsOwner(myProfile.publicId === listingData.sellerProfile.publicId);
+        } catch {
+          // User not logged in or failed to get profile
+          setIsOwner(false);
+        }
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load listing");
       } finally {
@@ -108,6 +121,33 @@ const ListingDetailPage = () => {
 
   const handleSellSimilar = () => {
     navigate("/listing/create");
+  };
+
+  const handleEdit = () => {
+    navigate(`/listings/${listingId}/edit`);
+  };
+
+  const handleDelete = async () => {
+    if (!listing) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this listing? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteListing(listing.publicId);
+      // Navigate to home after successful deletion
+      navigate("/home");
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message || "Failed to delete listing. Please try again.";
+      alert(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (loading) {
@@ -209,6 +249,27 @@ const ListingDetailPage = () => {
             />
 
             <ProductDescription description={listing.description} />
+
+            {/* Owner Actions */}
+            {isOwner && (
+              <div className="border-t mt-8 pt-6">
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleEdit}
+                    className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Edit Listing
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="flex-1 px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-red-400 disabled:cursor-not-allowed"
+                  >
+                    {isDeleting ? "Deleting..." : "Delete Listing"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* CTA */}
             <div className="border-t mt-8 pt-6">

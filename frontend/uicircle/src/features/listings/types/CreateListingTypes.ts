@@ -61,4 +61,10 @@ export interface CreateListingFormProps {
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (index: number) => void;
   onCancel: () => void;
+  
+  // Optional props for edit mode
+  submitButtonText?: string;
+  loadingButtonText?: string;
+  formTitle?: string;
+  formDescription?: string;
 }
