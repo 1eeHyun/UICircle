@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom"; 
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { SignUpPage } from "../features/auth/pages/SignUpPage";
 import { HomePage } from "../features/home/pages/HomePage";
@@ -7,35 +7,17 @@ import { SearchPage } from "../features/search/pages/SearchPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
-import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
-import NotificationPage from "@/features/notification/pages/NotificationPage";
-import OffersPage from "@/features/transaction/pages/OffersPage";
-import FavoritesPage from "@/features/listings/pages/FavoritesPage";
-import MessagesPage from "@/features/messages/pages/MessagesPage";
+import UserProfilePage from "@/features/profile/pages/UserProfilePage";
+
 
 const AppRouter = createBrowserRouter([
-  {
-    path: "/",
-    element: <LoginPage />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/signup",
-    element: <SignUpPage />,
-  },
-  {
-    path: "/verify-email/pending",
-    element: <VerifyEmailPendingPage />,
-  },
-  {
-    path: "/verify-email",
-    element: <VerifyEmailPage />,
-  },
+  { path: "/", element: <LoginPage /> },
+  { path: "/signup", element: <SignUpPage /> },
+  { path: "/verify-email/pending", element: <VerifyEmailPendingPage /> },
+  { path: "/verify-email", element: <VerifyEmailPage /> },
+
   {
     path: "/home",
     element: (
@@ -43,7 +25,17 @@ const AppRouter = createBrowserRouter([
         <HomePage />
       </ProtectedRoute>
     ),
-  },  
+  },
+
+  {
+    path: "/profile/:id",
+    element: (
+      <ProtectedRoute>
+        <UserProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+
   {
     path: "/category/:categorySlug",
     element: (
@@ -52,6 +44,7 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/listing/create",
     element: (
@@ -60,6 +53,7 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/listings/:listingId",
     element: (
@@ -68,6 +62,7 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
   {
     path: "/search",
     element: (
@@ -76,62 +71,6 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/profile/:publicId",
-    element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/notifications",
-    element: (
-      <ProtectedRoute>
-        <NotificationPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/offers",
-    element: (
-      <ProtectedRoute>
-        <OffersPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/favorites",
-    element: (
-      <ProtectedRoute>
-        <FavoritesPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/messages",
-    element: (
-      <ProtectedRoute>
-        <MessagesPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/messages/:conversationId",
-    element: (
-      <ProtectedRoute>
-        <MessagesPage />
-      </ProtectedRoute>
-    ),
-  },
 ]);
 
-export { AppRouter };
+export { AppRouter };   // ⬅️ MUST BE HERE
