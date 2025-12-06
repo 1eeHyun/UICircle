@@ -9,6 +9,7 @@ import { CreateListingPage } from "@/features/listings/pages/CreateListingPage";
 import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
+import OffersPage from "@/features/offers/pages/OffersPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -65,6 +66,14 @@ const AppRouter = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <SearchPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/offers",
+    element: (
+      <ProtectedRoute>
+        <OffersPage />
       </ProtectedRoute>
     )
   },

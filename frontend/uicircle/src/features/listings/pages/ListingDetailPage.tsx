@@ -4,10 +4,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import CategoryMenu from "@/components/CategoryMenu";
 import {
-  getTopLevelCategories,
   ListingResponse,
   getListing,
-  CategoryResponse,
   toggleFavorite,
 } from "../services/ListingService";
 
@@ -23,15 +21,17 @@ import Breadcrumb from "@/features/listings/components/listing-detail/Breadcrumb
 import LocationMap from "@/features/listings/components/listing-detail/LocationMap";
 
 import OfferModal from "@/features/transaction/components/OfferModal";
+import { useCategories } from "@/features/listings/context/CategoryContext";
 
 const ListingDetailPage = () => {
   const { listingId } = useParams<{ listingId: string }>();
   const navigate = useNavigate();
 
   const [listing, setListing] = useState<ListingResponse | null>(null);
-  const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+
+  const { categories } = useCategories();
 
   // Offer modal state
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
@@ -42,9 +42,6 @@ const ListingDetailPage = () => {
         setLoading(true);
         const listingData = await getListing(listingId!);
         setListing(listingData);
-
-        const categoriesData = await getTopLevelCategories();
-        setCategories(categoriesData);
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load listing");
       } finally {
@@ -55,17 +52,14 @@ const ListingDetailPage = () => {
     fetchData();
   }, [listingId]);
 
-  // Handler functions
   const handleLike = async () => {
     if (!listing) return;
 
     const prevIsFavorited = listing.isFavorited;
     const prevFavoriteCount = listing.favoriteCount;
 
-    // optimistic update
     const nextIsFavorited = !prevIsFavorited;
-    const nextFavoriteCount =
-      prevFavoriteCount + (nextIsFavorited ? 1 : -1);
+    const nextFavoriteCount = prevFavoriteCount + (nextIsFavorited ? 1 : -1);
 
     setListing({
       ...listing,
@@ -98,9 +92,7 @@ const ListingDetailPage = () => {
     navigate(`/profile/${listing?.sellerProfile.publicId}`);
   };
 
-  // Open offer modal
   const handleMakeOffer = () => {
-    console.log("handleMakeOffer called"); // debug log
     setIsOfferModalOpen(true);
   };
 
@@ -109,21 +101,20 @@ const ListingDetailPage = () => {
     navigate(`/profile/${listing.sellerProfile.publicId}?tab=listings`);
   };
 
-  // Called after offer is created (refetch, toast, etc.)
   const handleOfferCreated = () => {
     console.log("Offer created successfully");
-    // e.g. refetch listing / offers, or show a toast
+    // TODO: refetch / toast
   };
 
   const handleSellSimilar = () => {
     navigate("/listing/create");
-  };  
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
         <Navbar />
-        <CategoryMenu categories={[]} />
+        <CategoryMenu categories={categories} />
       </div>
     );
   }
@@ -132,6 +123,7 @@ const ListingDetailPage = () => {
     return (
       <div className="min-h-screen bg-white">
         <Navbar />
+        <CategoryMenu categories={categories} />
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <h2 className="text-2xl font-bold mb-4">Listing Not Found</h2>
           <p className="text-gray-600 mb-6">
@@ -187,7 +179,6 @@ const ListingDetailPage = () => {
                 salesCount={listing.sellerProfile?.soldCount ?? 0}
                 onViewProfile={handleViewProfile}
               />
-
             </div>
           </div>
 
@@ -222,10 +213,10 @@ const ListingDetailPage = () => {
             {/* CTA */}
             <div className="border-t mt-8 pt-6">
               <div className="w-full px-0">
-                <button 
+                <button
                   onClick={handleSellSimilar}
-                  className="w-full px-6 py-2 border border-primary text-primary rounded-lg font-medium hover:bg-primary/10">
-
+                  className="w-full px-6 py-2 border border-primary text-primary rounded-lg font-medium hover:bg-primary/10"
+                >
                   Have a similar item? Sell yours
                 </button>
               </div>

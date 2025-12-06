@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/pages/HomePage.tsx
+import { useEffect, useState, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import CategoryMenu from "@/components/CategoryMenu";
 import ListingCard from "@/components/ListingCard";
@@ -6,46 +7,141 @@ import HomePageTabs from "@/features/listings/components/home/HomePageTabs";
 import MyFavoritesSection from "@/features/listings/components/listing-favorite/MyFavoritesSection";
 
 import {
-  getTopLevelCategories,
   getAllActiveListings,
-  CategoryResponse,
-  ListingSummaryResponse,
+  type ListingSummaryResponse,
 } from "@/features/listings/services/ListingService";
+import { useCategories } from "@/features/listings/context/CategoryContext";
+
+import type { PriceOfferResponse } from "@/features/offers/types";
+import {
+  getSentOffers,
+  getReceivedOffers,
+} from "@/features/offers/services/OfferService";
+import { OffersSection } from "@/features/offers/components/OffersSection";
+
+type HomeTab = "RECENT" | "LIKES" | "OFFERS";
+type OffersTab = "sent" | "received";
 
 const HomePage = () => {
-  const [categories, setCategories] = useState<CategoryResponse[]>([]);
+  // Category data from context
+  const {
+    categories,
+    loading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
+
+  // Listings for "RECENT" tab
   const [listings, setListings] = useState<ListingSummaryResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [listingsError, setListingsError] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"RECENT" | "LIKES">("RECENT");
+  // Home top-level tab (Recent / Likes / Offers)
+  const [activeTab, setActiveTab] = useState<HomeTab>("RECENT");
 
+  // Sub tab for Offers section (sent / received)
+  const [offersTab, setOffersTab] = useState<OffersTab>("sent");
+
+  // Offers data
+  const [sentOffers, setSentOffers] = useState<PriceOfferResponse[]>([]);
+  const [receivedOffers, setReceivedOffers] = useState<PriceOfferResponse[]>([]);
+
+  // Offers loading / error state
+  const [loadingSent, setLoadingSent] = useState(false);
+  const [loadingReceived, setLoadingReceived] = useState(false);
+  const [errorSent, setErrorSent] = useState<string | null>(null);
+  const [errorReceived, setErrorReceived] = useState<string | null>(null);
+  const [offersLoaded, setOffersLoaded] = useState(false);
+
+  // Fetch recent listings for RECENT tab
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchListings = async () => {
       try {
-        setLoading(true);
-        const [categoriesData, listingsData] = await Promise.all([
-          getTopLevelCategories(),
-          getAllActiveListings(0, 20, "createdAt", "DESC"),
-        ]);
-
-        setCategories(categoriesData);
+        setListingsLoading(true);
+        const listingsData = await getAllActiveListings(
+          0,
+          20,
+          "createdAt",
+          "DESC"
+        );
         setListings(listingsData.content);
       } catch (err: any) {
-        setError(err?.response?.data?.message || "Failed to load data");
+        setListingsError(
+          err?.response?.data?.message || "Failed to load listings"
+        );
       } finally {
-        setLoading(false);
+        setListingsLoading(false);
       }
     };
 
-    fetchData();
+    fetchListings();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  // Reusable fetch function for offers (sent + received)
+  const fetchOffers = useCallback(async () => {
+    try {
+      setLoadingSent(true);
+      setLoadingReceived(true);
+      setErrorSent(null);
+      setErrorReceived(null);
+
+      const [sent, received] = await Promise.all([
+        getSentOffers(),
+        getReceivedOffers(),
+      ]);
+
+      setSentOffers(sent);
+      setReceivedOffers(received);
+      setOffersLoaded(true);
+    } catch (e) {
+      console.error(e);
+      setErrorSent("Failed to load sent offers.");
+      setErrorReceived("Failed to load received offers.");
+    } finally {
+      setLoadingSent(false);
+      setLoadingReceived(false);
+    }
+  }, []);
+
+  // Only load offers when OFFERS tab is opened for the first time
+  useEffect(() => {
+    if (activeTab === "OFFERS" && !offersLoaded) {
+      fetchOffers();
+    }
+  }, [activeTab, offersLoaded, fetchOffers]);
+
+  // Callback passed down to OffersSection -> OfferList
+  // This will be called after accept / reject / cancel
+  const handleOfferActionCompleted = () => {
+    // Refresh offers data
+    fetchOffers();
+  };
+
+  // Global loading / error combined from categories + listings
+  const isLoading = categoriesLoading || listingsLoading;
+  const errorMessage = categoriesError || listingsError;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <CategoryMenu categories={categories} />
+        <div className="flex h-96 items-center justify-center">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
-  if (error) {
-    return <div>{error}</div>;
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <CategoryMenu categories={categories} />
+        <div className="flex h-96 items-center justify-center">
+          <p className="text-red-600">{errorMessage}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -53,23 +149,24 @@ const HomePage = () => {
       <Navbar />
       <CategoryMenu categories={categories} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
-        
-        {/* Home tab */}
+      <div className="mx-auto max-w-7xl px-4 pt-6 pb-8 sm:px-6 lg:px-8">
+        {/* Top-level home tabs */}
         <HomePageTabs activeTab={activeTab} onChange={setActiveTab} />
 
-        {/* Section */}
+        {/* RECENT tab */}
         {activeTab === "RECENT" && (
           <div>
-            <div className="
-              grid 
-              grid-cols-2 
-              sm:grid-cols-3 
-              md:grid-cols-4 
-              lg:grid-cols-5 
-              xl:grid-cols-6 
-              gap-4
-            ">
+            <div
+              className="
+                grid 
+                grid-cols-2 
+                gap-4
+                sm:grid-cols-3 
+                md:grid-cols-4 
+                lg:grid-cols-5 
+                xl:grid-cols-6
+              "
+            >
               {listings.map((listing) => (
                 <ListingCard key={listing.publicId} listing={listing} />
               ))}
@@ -77,10 +174,24 @@ const HomePage = () => {
           </div>
         )}
 
-        {activeTab === "LIKES" && (
-          <MyFavoritesSection />
-        )}
+        {/* LIKES tab */}
+        {activeTab === "LIKES" && <MyFavoritesSection />}
 
+        {/* OFFERS tab */}
+        {activeTab === "OFFERS" && (
+          <OffersSection
+            activeTab={offersTab}
+            onTabChange={setOffersTab}
+            sentOffers={sentOffers}
+            receivedOffers={receivedOffers}
+            loadingSent={loadingSent}
+            loadingReceived={loadingReceived}
+            errorSent={errorSent}
+            errorReceived={errorReceived}
+            // Important: refresh callback after accept/reject/cancel
+            onRefresh={handleOfferActionCompleted}
+          />
+        )}
       </div>
     </div>
   );

@@ -4,14 +4,13 @@ import { useParams } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
 import CategoryMenu from "../../../components/CategoryMenu";
 import {
-  getTopLevelCategories,
   getListingsByCategory,
   getNearbyListings,
-  CategoryResponse,
-  ListingSummaryResponse,
+  type ListingSummaryResponse,
 } from "../services/ListingService";
 import { CategoryFilterSidebar } from "@/features/listings/components/listing-category/CategoryFilterSidebar";
 import { CategoryListingGrid } from "@/features/listings/components/listing-category/CategoryListingGrid";
+import { useCategories } from "@/features/listings/context/CategoryContext";
 
 type PriceFilter =
   | "ANY"
@@ -23,7 +22,9 @@ type PriceFilter =
 
 const CategoryPage = () => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
-  const [categories, setCategories] = useState<CategoryResponse[]>([]);
+
+  const { categories } = useCategories();
+
   const [listings, setListings] = useState<ListingSummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,12 +36,11 @@ const CategoryPage = () => {
 
   // location filter
   const [nearMe, setNearMe] = useState(false);
-  const [radiusMiles, setRadiusMiles] = useState<number>(5); // default 5 miles
+  const [radiusMiles, setRadiusMiles] = useState<number>(5);
   const [lastCoords, setLastCoords] = useState<{ lat: number; lng: number } | null>(
     null
   );
 
-  // load category listings
   useEffect(() => {
     const fetchData = async () => {
       if (!categorySlug) return;
@@ -49,12 +49,14 @@ const CategoryPage = () => {
         setLoading(true);
         setError("");
 
-        const [categoriesData, listingsData] = await Promise.all([
-          getTopLevelCategories(),
-          getListingsByCategory(categorySlug, 0, 20, "createdAt", "DESC"),
-        ]);
+        const listingsData = await getListingsByCategory(
+          categorySlug,
+          0,
+          20,
+          "createdAt",
+          "DESC"
+        );
 
-        setCategories(categoriesData);
         setListings(listingsData.content);
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load category");
@@ -77,8 +79,11 @@ const CategoryPage = () => {
     categorySlug?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) ??
     "Category";
 
-  // helper to fetch nearby listings (reusable)
-  const fetchNearbyWithCoords = async (lat: number, lng: number, radius: number) => {
+  const fetchNearbyWithCoords = async (
+    lat: number,
+    lng: number,
+    radius: number
+  ) => {
     if (!categorySlug) return;
 
     try {
@@ -153,7 +158,6 @@ const CategoryPage = () => {
       setError("");
       setNearMe(true);
 
-      // get current position
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
@@ -184,7 +188,6 @@ const CategoryPage = () => {
         }
       );
     } else {
-      // disable near-me → restore normal category list
       const reload = async () => {
         if (!categorySlug) return;
         try {
@@ -223,6 +226,7 @@ const CategoryPage = () => {
     return (
       <div className="min-h-screen bg-surface-light">
         <Navbar />
+        <CategoryMenu categories={categories} />
         <div className="flex justify-center items-center h-96">
           <div className="text-center">
             <svg
@@ -255,6 +259,7 @@ const CategoryPage = () => {
     return (
       <div className="min-h-screen bg-surface-light">
         <Navbar />
+        <CategoryMenu categories={categories} />
         <div className="flex justify-center items-center h-96">
           <div className="text-center">
             <svg
