@@ -6,8 +6,8 @@ import { getNotificationIcon, formatNotificationType } from "../../utils/notific
 
 interface NotificationItemProps {
   notification: NotificationResponse;
-  onRead: (publicId: string) => void;
-  onDelete: (publicId: string) => void;
+  onRead: (id: string) => void;
+  onDelete: (id: string) => void;
   onClick?: (notification: NotificationResponse) => void;
   compact?: boolean;
 }

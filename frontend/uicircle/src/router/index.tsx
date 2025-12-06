@@ -10,7 +10,8 @@ import { ListingDetailPage } from "@/features/listings/pages/ListingDetailPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import VerifyEmailPendingPage from "@/features/auth/pages/VerifyEmailPendingPage";
 import UserProfilePage from "@/features/profile/pages/UserProfilePage";
-
+import OffersPage from "@/features/offers/pages/OffersPage";
+import MessagesPage from "@/features/messages/pages/MessagesPage";
 
 const AppRouter = createBrowserRouter([
   { path: "/", element: <LoginPage /> },
@@ -71,6 +72,30 @@ const AppRouter = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "/offers",
+    element: (
+      <ProtectedRoute>
+        <OffersPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/messages",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/chat/:conversationId",
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
+      </ProtectedRoute>
+    )
+  },
 ]);
 
-export { AppRouter };   // ⬅️ MUST BE HERE
+export { AppRouter };

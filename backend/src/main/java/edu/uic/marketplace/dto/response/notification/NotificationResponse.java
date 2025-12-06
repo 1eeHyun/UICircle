@@ -14,7 +14,6 @@ import java.time.Instant;
 public class NotificationResponse {
 
     private String publicId;
-    private Long notificationId;
     private NotificationType type;
     private String title;
     private String message;
@@ -28,7 +27,6 @@ public class NotificationResponse {
     public static NotificationResponse from(Notification notification) {
         return NotificationResponse.builder()
                 .publicId(notification.getPublicId())
-                .notificationId(notification.getNotificationId())
                 .type(notification.getType())
                 .title(notification.getTitle())
                 .message(notification.getMessage())

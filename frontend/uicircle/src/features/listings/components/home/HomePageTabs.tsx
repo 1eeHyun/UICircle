@@ -1,12 +1,13 @@
 interface HomePageTabsProps {
-  activeTab: "RECENT" | "LIKES";
-  onChange: (tab: "RECENT" | "LIKES") => void;
+  activeTab: "RECENT" | "LIKES" | "OFFERS";
+  onChange: (tab: "RECENT" | "LIKES" | "OFFERS") => void;
 }
 
 export default function HomePageTabs({ activeTab, onChange }: HomePageTabsProps) {
   const tabs = [
     { key: "RECENT", label: "Recent" },
     { key: "LIKES", label: "Likes" },
+    { key: "OFFERS", label: "Offers" },
   ] as const;
 
   return (

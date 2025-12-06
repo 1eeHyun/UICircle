@@ -47,11 +47,6 @@ export default function NotificationDropdown() {
     }
   };
 
-  const handleViewAll = () => {
-    navigate("/notifications");
-    setOpen(false);
-  };
-
   return (
     <div className="relative" ref={dropdownRef}>
       <NotificationBell
@@ -60,7 +55,7 @@ export default function NotificationDropdown() {
       />
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
             <h3 className="text-base font-semibold text-gray-900">Notifications</h3>
@@ -101,18 +96,6 @@ export default function NotificationDropdown() {
               emptyMessage="You're all caught up!"
             />
           </div>
-
-          {/* Footer - View All */}
-          {notifications.length > 0 && (
-            <div className="border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={handleViewAll}
-                className="w-full py-3 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium transition-colors"
-              >
-                View all notifications
-              </button>
-            </div>
-          )}
         </div>
       )}
     </div>

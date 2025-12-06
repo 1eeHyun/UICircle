@@ -26,3 +26,12 @@
     overflow: hidden;
   }
 }
+
+/* Put Leaflet layers behind app-level overlays (navbar, dropdowns, modals, etc.) */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control,
+.leaflet-container {
+  z-index: 0 !important;
+}

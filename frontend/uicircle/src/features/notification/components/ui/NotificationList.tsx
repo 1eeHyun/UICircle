@@ -8,8 +8,8 @@ interface NotificationListProps {
   loading: boolean;
   hasMore: boolean;
   compact?: boolean;
-  onRead: (publicId: string) => void;
-  onDelete: (publicId: string) => void;
+  onRead: (id: string) => void;
+  onDelete: (id: string) => void;
   onLoadMore?: () => void;
   onItemClick?: (notification: NotificationResponse) => void;
   emptyMessage?: string;

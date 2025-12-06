@@ -63,12 +63,12 @@ export const getUnreadCount = async () => {
   return res.data.data; // number
 };
 
-export const markAsRead = async (publicId: string) => {
+export const markAsRead = async (notificationId: string) => {
   const { method, url } = NOTIFICATION_ROUTES.MARK_AS_READ;
 
   const res = await apiClient.request<CommonResponse<NotificationResponse>>({
     method,
-    url: url(publicId),
+    url: url(notificationId),
   });
 
   return res.data.data; // NotificationResponse
@@ -83,12 +83,12 @@ export const markAllAsRead = async () => {
   });
 };
 
-export const deleteNotification = async (publicId: string) => {
+export const deleteNotification = async (notificationId: string) => {
   const { method, url } = NOTIFICATION_ROUTES.DELETE_ONE;
 
   await apiClient.request<CommonResponse<void>>({
     method,
-    url: url(publicId),
+    url: url(notificationId),
   });
 };
 
